@@ -6,13 +6,17 @@ Assumes you have:
 * foreman (ruby gem)
 * heroku (ruby gem)
 
+### Setup Mongo user for local broker
+    $ mongo larvamap_messaging
+    > db.addUser("celery","yourpassword")
+    > exit
+
 ### Install the requirements
     $ pip install -r requirements.rb
 
 ### Create an .env file with the following contents
     APPLICATION_SETTINGS=development.py
     SECRET_KEY=somethinglongandunique
-    CELERY_BROKER=celery_broker_string
 
 ### Edit larva_service/development.py and larva_service/testing.py
     Add MongoDB connection information
@@ -26,8 +30,7 @@ Assumes you have:
 
     $ heroku config:add APPLICATION_SETTINGS=production.py
     $ heroku config:add SECRET_KEY=somethinglongandunique
-    $ heroku config:add CELERY_BROKER=celery_broker_string
 
     $ heroku addons:add mongolab:starter
     $ git push heroku master
-    $ heroku ps:scale web=1
+    $ heroku ps:scale web=1 celery=1

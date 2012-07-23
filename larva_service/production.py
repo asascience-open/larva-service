@@ -10,3 +10,6 @@ MONGODB_PORT = url.port
 MONGODB_USERNAME = url.username
 MONGODB_PASSWORD = url.password
 MONGODB_DATABASE = url.path[1:]
+
+# Celery
+BROKER_URL = 'rabbitmq or amazonsqs string'

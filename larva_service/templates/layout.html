@@ -1,0 +1,19 @@
+<!doctype html>
+<head>
+    <title>Larva Service</title>
+    {% block javascript %}{% endblock %}
+    {% block css %}
+        <link rel=stylesheet type=text/css href="{{ url_for('.static', filename='style.css') }}" />
+    {% endblock %}
+</head>
+<body>
+    {% block body %}
+        <div class=page>
+            <h1>Larva Service</h1>
+            {% for message in get_flashed_messages() %}
+                <div class=flash>{{ message }}</div>
+            {% endfor %}
+            {% block page %}{% endblock %}
+        </div>
+    {% endblock %}
+</body>

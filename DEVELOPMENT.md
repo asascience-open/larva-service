@@ -7,8 +7,14 @@ Assumes you have:
 * heroku (ruby gem)
 
 ### Setup Mongo user for local broker
-    $ mongo larvamap_messaging
-    > db.addUser("celery","yourpassword")
+    $ mongo
+    > use admin
+    > db.addUser('admin', 'adminpassword')
+    > db.auth('admin', 'adminpassword')
+    > use larvamap_messaging
+    > db.addUser("larvamap","yourpassword")
+    > use larvamap_development
+    > db.addUser("larvamap","yourpassword")
     > exit
 
 ### Install the requirements

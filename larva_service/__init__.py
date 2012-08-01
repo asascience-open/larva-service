@@ -7,26 +7,23 @@ from celery import Celery
 
 # Create application object
 app = Flask(__name__)
+
 app.config.from_object('larva_service.defaults')
 app.config.from_envvar('APPLICATION_SETTINGS', silent=True)
 
-# Celery config
-class CeleryConfig:
-    CELERY_RESULT_BACKEND = "mongodb"
+class CeleryConfig(object):
+    CELERY_RESULT_BACKEND = 'mongodb'
+    CELERY_RESULT_SERIALIZER = 'json'
+    CELERY_STORE_ERRORS_EVEN_IF_IGNORED = True
     CELERY_MONGODB_BACKEND_SETTINGS = {
-        "host": app.config['MONGODB_HOST'],
-        "port": app.config['MONGODB_PORT'],
-        "user": app.config['MONGODB_USERNAME'],
-        "pass": app.config['MONGODB_PASSWORD'],
-        "database": app.config['MONGODB_DATABASE'],
-        "taskmeta_collection": "tasks"
+        "host"                  : app.config.get("MONGODB_HOST"),
+        "port"                  : app.config.get("MONGODB_PORT"),
+        "user"                  : app.config.get("MONGODB_USERNAME"),
+        "password"              : app.config.get("MONGODB_PASSWORD"),
+        "database"              : app.config.get("MONGODB_DATABASE"),
+        "taskmeta_collection"   : 'tasks'
     }
 app.config.from_object(CeleryConfig)
-
-# Create celery object
-celery = Celery(__name__)
-# Now configure celety
-celery.config_from_object(app.config)
 
 # Create logging
 if app.config.get('LOG_FILE') == True:
@@ -35,6 +32,11 @@ if app.config.get('LOG_FILE') == True:
     file_handler = FileHandler('log.txt')
     file_handler.setLevel(logging.INFO)
     app.logger.addHandler(file_handler)
+
+# Create celery object
+celery = Celery(__name__)
+# Now configure celety
+celery.conf.add_defaults(app.config)
 
 # Create the database connection
 db = MongoKit(app)

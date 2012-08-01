@@ -1,5 +1,6 @@
 DEBUG = True
 TESTING = True
+LOG_FILE = True
 
 # Database
 MONGODB_HOST = 'localhost'

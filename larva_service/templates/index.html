@@ -2,4 +2,8 @@
 
 {% block page %}
 
+    {% for task in tasks %}
+        {{ task._id }}
+    {% endfor %}
+
 {% endblock %}

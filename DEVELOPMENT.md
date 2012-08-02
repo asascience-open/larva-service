@@ -40,4 +40,4 @@ Assumes you have:
     $ heroku addons:add mongolab:starter
     $ heroku addons:add redistogo:nano
     $ git push heroku master
-    $ heroku ps:scale web=1 celery=1
+    $ heroku ps:scale web=1 celeryd=1

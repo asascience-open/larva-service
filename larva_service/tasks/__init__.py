@@ -1,1 +1,1 @@
-from larva_service.tasks import run_model
+from larva_service.tasks import larva

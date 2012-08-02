@@ -6,4 +6,7 @@
         {{ task._id }}
     {% endfor %}
 
+    <a href="{{ url_for('cleartasks') }}">Clear tasks</a>
+    <a href="{{ url_for('runtask') }}">Queue task</a>
+
 {% endblock %}

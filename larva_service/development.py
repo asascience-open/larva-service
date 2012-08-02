@@ -9,4 +9,4 @@ MONGODB_USERNAME = 'larvamap'
 MONGODB_PASSWORD = 'yourpassword'
 
 # Celery
-BROKER_URL = "mongodb://%s:%s@%s:%s/larvaservice_messaging" % (MONGODB_USERNAME, MONGODB_PASSWORD, MONGODB_HOST, MONGODB_PORT)
+BROKER_URL = 'redis://localhost:6379/0'

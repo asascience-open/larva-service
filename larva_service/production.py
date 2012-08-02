@@ -12,4 +12,4 @@ MONGODB_PASSWORD = url.password
 MONGODB_DATABASE = url.path[1:]
 
 # Celery
-BROKER_URL = 'rabbitmq or amazonsqs string'
+BROKER_URL = os.environ.get('REDISTOGO_URL')

@@ -14,7 +14,8 @@ app.config.from_envvar('APPLICATION_SETTINGS', silent=True)
 class CeleryConfig(object):
     CELERY_RESULT_BACKEND = 'mongodb'
     CELERY_RESULT_SERIALIZER = 'json'
-    CELERY_STORE_ERRORS_EVEN_IF_IGNORED = True
+    CELERY_TASK_SERIALIZER = 'json'
+    CELERY_TRACK_STARTED = True
     CELERY_MONGODB_BACKEND_SETTINGS = {
         "host"                  : app.config.get("MONGODB_HOST"),
         "port"                  : app.config.get("MONGODB_PORT"),

@@ -12,7 +12,7 @@ Assumes you have:
     > db.addUser('admin', 'adminpassword')
     > db.auth('admin', 'adminpassword')
     > use larvamap_messaging
-    > db.addUser("larvamap","yourpassword")
+    > db.addUser("larvamessaging","yourpassword")
     > use larvamap_development
     > db.addUser("larvamap","yourpassword")
     > exit
@@ -38,5 +38,6 @@ Assumes you have:
     $ heroku config:add SECRET_KEY=somethinglongandunique
 
     $ heroku addons:add mongolab:starter
+    $ heroku addons:add redistogo:nano
     $ git push heroku master
     $ heroku ps:scale web=1 celery=1

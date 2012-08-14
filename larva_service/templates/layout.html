@@ -1,19 +1,38 @@
-<!doctype html>
-<head>
-    <title>Larva Service</title>
-    {% block javascript %}{% endblock %}
-    {% block css %}
-        <link rel=stylesheet type=text/css href="{{ url_for('.static', filename='style.css') }}" />
-    {% endblock %}
-</head>
-<body>
-    {% block body %}
-        <div class=page>
-            <h1>Larva Service</h1>
-            {% for message in get_flashed_messages() %}
-                <div class=flash>{{ message }}</div>
-            {% endfor %}
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>Larva Service</title>
+        {% block javascript %}{% endblock %}
+        {% block css %}
+            <link rel=stylesheet type=text/css href="{{ url_for('.static', filename='style.css') }}" />
+        {% endblock %}
+    </head>
+    <body>
+        
+        <div class="navbar navbar-fixed-top">
+            <div class="navbar-inner">
+                <div class="container">
+                    <a class="brand" href="#">
+                        Larva Model Service
+                    </a>
+                    <ul class="nav">
+                      <li><a href="/">Home</a></li>
+                      <li><a href="#">Queue</a></li>
+                      <li><a href="#">Results</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        {% block subnav %}{% endblock %}
+
+        <div class="container">
+            <div class="alert alert-block">
+                {% for message in get_flashed_messages() %}
+                    <div class='alert'>{{ message }}</div>
+                {% endfor %}
+            </div>
             {% block page %}{% endblock %}
         </div>
-    {% endblock %}
-</body>
+    </body>
+</html

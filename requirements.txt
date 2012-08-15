@@ -6,3 +6,4 @@ mongokit==0.8
 Celery==3.0.5
 celery-with-mongodb==3.0
 celery-with-redis==3.0
+pytz==2012d

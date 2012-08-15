@@ -6,7 +6,7 @@ LOG_FILE = True
 MONGODB_HOST = 'localhost'
 MONGODB_PORT = 27017
 MONGODB_DATABASE = 'larvaservice_testing'
-MONGODB_USERNAME = 'celery'
+MONGODB_USERNAME = 'larvamap'
 MONGODB_PASSWORD = 'yourpassword'
 
 # Celery

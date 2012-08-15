@@ -1,1 +1,1 @@
-from larva_service.views import index
+from larva_service.views import index, run, queue

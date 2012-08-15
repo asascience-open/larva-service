@@ -2,9 +2,12 @@
 <html lang="en">
     <head>
         <title>Larva Service</title>
-        {% block javascript %}{% endblock %}
+        {% block javascript %}
+            <script type="text/javascript" src="{{ url_for('.static', filename='jquery.min.js') }}" /></script>
+            <script type="text/javascript" src="{{ url_for('.static', filename='bootstrap.js') }}" /></script>
+        {% endblock %}
         {% block css %}
-            <link rel=stylesheet type=text/css href="{{ url_for('.static', filename='style.css') }}" />
+            <link rel=stylesheet type=text/css href="{{ url_for('.static', filename='style.css') }}"></script>
         {% endblock %}
     </head>
     <body>
@@ -16,9 +19,9 @@
                         Larva Model Service
                     </a>
                     <ul class="nav">
-                      <li><a href="/">Home</a></li>
-                      <li><a href="#">Queue</a></li>
-                      <li><a href="#">Results</a></li>
+                      <li><a href="{{ url_for('index') }}">Home</a></li>
+                      <li><a href="{{ url_for('queue') }}">Queue</a></li>
+                      <li><a href="{{ url_for('runs') }}">Results</a></li>
                     </ul>
                 </div>
             </div>
@@ -27,11 +30,16 @@
         {% block subnav %}{% endblock %}
 
         <div class="container">
-            <div class="alert alert-block">
-                {% for message in get_flashed_messages() %}
-                    <div class='alert'>{{ message }}</div>
-                {% endfor %}
-            </div>
+            {%- with messages = get_flashed_messages(with_categories=true) %}
+                {%- if messages %}
+                    {%- for category, message in messages %}
+                        <div class="alert alert-{{ category }}">
+                            {{ message }}
+                        </div>
+                    {%- endfor %}
+                {%- endif %}
+            {%- endwith %}
+
             {% block page %}{% endblock %}
         </div>
     </body>

@@ -5,15 +5,16 @@ Assumes you have:
 * MongoDB >= 1.8.2
 * foreman (ruby gem)
 * heroku (ruby gem)
+* redis
 
-### Setup Mongo user for local broker
+### Setup Mongo user for results
     $ mongo
     > use admin
     > db.addUser('admin', 'adminpassword')
     > db.auth('admin', 'adminpassword')
-    > use larvamap_messaging
-    > db.addUser("larvamessaging","yourpassword")
     > use larvamap_development
+    > db.addUser("larvamap","yourpassword")
+    > use larvamap_testing
     > db.addUser("larvamap","yourpassword")
     > exit
 

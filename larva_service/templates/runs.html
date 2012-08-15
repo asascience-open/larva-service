@@ -6,7 +6,10 @@
         <div class="container">
             <ul class="nav nav-pills">
                 <li><a href="{{ url_for('clear_runs') }}">Clear runs</a></li>
-                <li><a href="{{ url_for('run_larva_model') }}">Run Larva Model</a></li>
+                <form method="POST" action="{{ url_for('run_larva_model') }}" class="navbar-form pull-left">
+                  <input type="textarea" class="span6" name="config" id="config" placeholder="Paste JSON here"></input>
+                  <input type="submit" value="Run Larva Model" class="btn"></input>
+                </form>
             </ul>
         </div>
     </div>

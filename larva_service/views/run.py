@@ -13,16 +13,19 @@ def run_larva_model():
     elif request.method == 'POST':
         run_details = request.form.get("config", None)
 
-    run = db.Run()
-    print run_details
-    if run_details is not None:
-        run.load_run_config(json.loads(run_details))
-        results = larva_run.delay(run.to_json())
-        run.task_id = unicode(results.task_id)
-        run.save()
-    else:
-        flash("No run configuration specified", 'error')
+    config_dict = None
+    try:
+        config_dict = json.loads(run_details)
+    except:
+        flash("Could not decode parameters", 'error')
+        return redirect(url_for('runs'))
 
+    run = db.Run()
+    run.load_run_config(config_dict)
+    results = larva_run.delay(run.to_json())
+    run.task_id = unicode(results.task_id)
+    run.save()
+    flash("Run created", 'success')
     return redirect(url_for('runs'))
 
 @app.route('/runs/clear', methods=['GET'])

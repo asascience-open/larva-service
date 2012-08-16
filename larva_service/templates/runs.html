@@ -7,7 +7,7 @@
             <ul class="nav nav-pills">
                 <li><a href="{{ url_for('clear_runs') }}">Clear runs</a></li>
                 <form method="POST" action="{{ url_for('run_larva_model') }}" class="navbar-form pull-left">
-                  <input type="textarea" class="span6" name="config" id="config" placeholder="Paste JSON here"></input>
+                  <input type="textarea" class="span4" name="config" id="config" placeholder="Paste JSON config here to create a manual run"></input>
                   <input type="submit" value="Run Larva Model" class="btn"></input>
                 </form>
             </ul>

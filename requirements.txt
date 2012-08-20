@@ -7,3 +7,5 @@ Celery==3.0.5
 celery-with-mongodb==3.0
 celery-with-redis==3.0
 pytz==2012d
+git+https://github.com/asascience-open/paegan.git@master#egg=paegan
+shapely==1.2.15

@@ -7,16 +7,20 @@ class LarvaRunTestCase(FlaskMongoTestCase):
     
     def test_upload_run_parameters(self):
 
-        timestamp = 1344460387672
+        timestamp = 1345161600000
 
         config = {
-            'particles' : 10,
-            'duration'  : 30,
-            'start'     : timestamp,
-            'geometry'  : "POLYGON ((153.2746875000000273 25.7885529585785953, -67.8581249999999727 27.9832813434000016, -67.8581249999999727 53.5328232787000005, -117.4284374999999727 67.0625260424999965, 138.5090625000000273 51.8279954420795335, 153.2746875000000273 25.7885529585785953))",
-            'hydro_path': "http://thredds.axiomalaska.com/thredds/dodsC/PWS_L2_FCST.nc",
-            'email'     : 'user@example.com',
-            'behavior'  : 'https://larvamap.s3.amazonaws.com/resources/501c40e740a83e0006000000.json'
+            'particles'         : 10,
+            'duration'          : 2,
+            'start'             : timestamp,
+            'timestep'          : 3600,
+            'release_depth'     : 10.5,
+            'vert_dispersion'   : 0.005,
+            'horiz_dispersion'  : 0.005,
+            'geometry'          : "POINT (-147 60.75)",
+            'hydro_path'        : "http://thredds.axiomalaska.com/thredds/dodsC/PWS_L2_FCST.nc",
+            'email'             : 'user@example.com',
+            'behavior'          : 'https://larvamap.s3.amazonaws.com/resources/501c40e740a83e0006000000.json'
         }
         jd = json.dumps(config)
 
@@ -24,6 +28,7 @@ class LarvaRunTestCase(FlaskMongoTestCase):
         rv = self.app.post('/run', data=dict(config=jd), follow_redirects=True)
 
         runs = list(self.db['runs'].find())
+
         assert len(runs) == 1
 
         assert runs[0]['particles'] == config['particles']
@@ -33,5 +38,12 @@ class LarvaRunTestCase(FlaskMongoTestCase):
         assert runs[0]['hydro_path'] == config['hydro_path']
         assert runs[0]['email'] == config['email']
         assert runs[0]['behavior'] == config['behavior']
-
-
+        assert runs[0]['cached_behavior'] is not None
+        assert runs[0]['horiz_dispersion'] == 0.005
+        assert runs[0]['vert_dispersion'] == 0.005
+        assert runs[0]['timestep'] == 3600
+        assert runs[0]['release_depth'] == 10.5
+        # Defaults
+        assert runs[0]['time_chunk'] == 2
+        assert runs[0]['horiz_chunk'] == 2
+        

@@ -37,3 +37,10 @@ def clear_runs():
 def runs():
     runs = db.Run.find()
     return render_template('runs.html', runs=runs)
+
+@app.route('/runs/<ObjectId:run_id>', methods=['GET'])
+@app.route('/runs/<ObjectId:run_id>.<string:format>', methods=['GET'])
+def show_run(run_id, format=None):
+    run = db.Run.find_one( { '_id' : run_id } )
+    run_config = json.dumps(run.run_config(), sort_keys=True, indent=4)
+    return render_template('show_run.html', run=run, run_config=run_config)

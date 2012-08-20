@@ -1,0 +1,37 @@
+{% from "macros.html" import status_bootstrap_class %}
+{% extends "layout.html" %}
+
+{% block page %}
+
+    <table class="table table-striped table-bordered table-condensed">
+        <thead>
+            <tr>
+                <th>status</th>
+                <th>created</th>
+                <th>task_id</th>
+                <th>behavior</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><span class="label label-{{ status_bootstrap_class(run.status()) }}">{{run.status()}}</span></td>
+                <td>{{ run.created }}</td>
+                <td>{{ run.task_id }}</td>
+                <td>{{ run.behavior }}</td>
+            </tr>
+         </tbody>
+    </table>
+
+    <dl class="dl-horizontal">
+        {% for key, value in run|dictsort %}
+            <dt>{{ key }} </dt>
+            <dd>{{ value }}</dd>
+        {% endfor %}
+    </dl>
+
+    <h3>Run JSON</h3>
+    <pre>
+{{ run_config }}
+    </pre>
+
+{% endblock %}

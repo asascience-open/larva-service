@@ -66,7 +66,8 @@ def show_run(run_id, format=None):
 
     if format == 'html':
         run_config = json.dumps(run.run_config(), sort_keys=True, indent=4)
-        return render_template('show_run.html', run=run, run_config=run_config)
+        cached_behavior = json.dumps(run.cached_behavior, sort_keys=True, indent=4)
+        return render_template('show_run.html', run=run, run_config=run_config, cached_behavior=cached_behavior)
     elif format == 'json':
         jsond = json.loads(run.to_json())
         remove_mongo_keys(jsond) #destructive method

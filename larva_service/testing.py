@@ -11,3 +11,5 @@ MONGODB_PASSWORD = 'yourpassword'
 
 # Celery
 BROKER_URL = 'redis://localhost:6379/1'
+
+S3_BUCKET = "larvamap-testing"

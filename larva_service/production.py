@@ -13,3 +13,5 @@ MONGODB_DATABASE = url.path[1:]
 
 # Celery
 BROKER_URL = os.environ.get('REDISTOGO_URL')
+
+S3_BUCKET = "larvamap-production"

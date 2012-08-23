@@ -1,11 +1,17 @@
 from flask.ext.mongokit import Document
-from larva_service import db
+from larva_service import db, app
 from datetime import datetime
 from celery.result import AsyncResult
 import json
 import urllib2
 import pytz
+import os
 import calendar
+from urlparse import urlparse
+import mimetypes
+from shapely.geometry import Point, Polygon
+
+from shapely.wkt import loads
 
 class Run(Document):
     __collection__ = 'runs'
@@ -26,7 +32,8 @@ class Run(Document):
        'horiz_chunk'        : int,
        'created'            : datetime,
        'task_id'            : unicode,
-       'email'              : unicode   # Email of the person who ran the model
+       'email'              : unicode,   # Email of the person who ran the model
+       'output'             : list
     }
     default_values = {
                       'created': datetime.utcnow,
@@ -40,9 +47,50 @@ class Run(Document):
     def status(self):
         return self.task().state
 
+    def google_maps_coordinates(self):
+        marker_positions = []
+        if self.geometry:
+            geo = loads(self.geometry)
+            # Always make a polygon
+            if isinstance(geo, Point):
+                marker_positions.append((geo.coords[0][1], geo.coords[0][0]))
+            else:
+                for pt in geo.exterior.coords:
+                    # Google maps is y,x not x,y
+                    marker_positions.append((pt[1], pt[0]))
+
+        return marker_positions
+
+    def get_file_key_and_path(self, file_path):
+        path = urlparse(file_path).path
+        name, ext = os.path.splitext(path)
+
+        file_type = "Unknown (%s)" % ext
+        if ext == ".zip":
+            if name.find('shp') != -1:
+                file_type = "Shapefile"
+            else:
+                file_type = "Zipfile"
+        elif ext == ".nc":
+            file_type = "NetCDF"
+        elif ext == ".json":
+            if name.find("trkl") != -1:
+                file_type = "Trackline (GeoJSON)"
+            else:
+                file_type = "JSON"
+        elif ext == ".mp4":
+            file_type = "Cross section animation"
+        elif ext == ".log":
+            file_type = "Logfile"
+
+        return { file_type : file_path }
+
+    def output_files(self):
+        return (self.get_file_key_and_path(file_path) for file_path in self.output)
+
     def run_config(self):
 
-        skip_keys = ['_id','cached_behavior','created','task_id']
+        skip_keys = ['_id','cached_behavior','created','task_id','output']
         d = {}
         for key,value in self.iteritems():
             try:

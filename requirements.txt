@@ -9,3 +9,4 @@ celery-with-redis==3.0
 pytz==2012d
 git+https://github.com/asascience-open/paegan.git@master#egg=paegan
 shapely==1.2.15
+boto==2.5.2

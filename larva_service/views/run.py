@@ -23,6 +23,7 @@ def run_larva_model():
 
     run = db.Run()
     run.load_run_config(config_dict)
+    run.save()
     results = larva_run.delay(run.to_json())
     run.task_id = unicode(results.task_id)
     run.save()
@@ -65,9 +66,11 @@ def show_run(run_id, format=None):
     run = db.Run.find_one( { '_id' : run_id } )
 
     if format == 'html':
+        markers = run.google_maps_coordinates()
         run_config = json.dumps(run.run_config(), sort_keys=True, indent=4)
         cached_behavior = json.dumps(run.cached_behavior, sort_keys=True, indent=4)
-        return render_template('show_run.html', run=run, run_config=run_config, cached_behavior=cached_behavior)
+        output_files = run.output_files()
+        return render_template('show_run.html', run=run, run_config=run_config, cached_behavior=cached_behavior, markers=markers)
     elif format == 'json':
         jsond = json.loads(run.to_json())
         remove_mongo_keys(jsond) #destructive method

@@ -31,3 +31,7 @@ pip-log.txt
 *.bak
 *log*
 *.swp
+
+cache/*
+output/*
+celerybeat*

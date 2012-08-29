@@ -38,7 +38,7 @@ def run(run_dict):
     start_time = datetime.fromtimestamp(data['start'] / 1000., pytz.utc)
 
     # Set up output directory/bucket for run
-    output_formats = ['.shp.zip','.nc']
+    output_formats = ['Shapefile','NetCDF','Trackline']
     output_path = os.path.join(os.path.dirname(__file__), '..', '..', 'output', run_id)
     shutil.rmtree(output_path, ignore_errors=True)
     os.makedirs(output_path)
@@ -62,7 +62,7 @@ def run(run_dict):
 
     # Setup ModelController
     model = ModelController(geometry=geometry, depth=start_depth, start=start_time, step=time_step, nstep=num_steps, npart=num_particles, models=models, use_bathymetry=False, use_shoreline=True,
-        time_chunk=data['time_chunk'], horiz_chunk=data['horiz_chunk'])
+        time_chunk=data['time_chunk'], horiz_chunk=data['horiz_chunk'], time_method=data['time_method'])
 
     # Run the model
     model.run(data['hydro_path'], output_path=output_path, output_formats=output_formats, cache=os.path.join(os.path.dirname(__file__), '..', '..', 'cache'))

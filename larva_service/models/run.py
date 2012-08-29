@@ -9,8 +9,8 @@ import os
 import calendar
 from urlparse import urlparse
 import mimetypes
-from shapely.geometry import Point, Polygon
-
+from shapely.geometry import Point, Polygon, asShape
+import geojson
 from shapely.wkt import loads
 
 class Run(Document):
@@ -30,16 +30,36 @@ class Run(Document):
        'vert_dispersion'    : float,    # Horizontal dispersion, in m/s
        'time_chunk'         : int,
        'horiz_chunk'        : int,
+       'time_method'        : unicode,  # Time method, 'nearest' or 'interp'
        'created'            : datetime,
        'task_id'            : unicode,
        'email'              : unicode,   # Email of the person who ran the model
-       'output'             : list
+       'output'             : list,
+       'trackline'          : unicode
     }
     default_values = {
                       'created': datetime.utcnow,
                       'time_chunk': 2,
                       'horiz_chunk': 2
                       }
+
+    def compute(self):
+        """
+        Add any metadata to this object from the model run output
+        """
+        try:
+            self.set_trackline()
+        except:
+            app.logger.warning("Could no compute (cache) model run results locally")
+
+    def set_trackline(self):
+        if self.trackline is None:
+            for filepath in self.output:
+                if os.path.basename(filepath) == "trackline.geojson":
+                    # Get trackline.geojson and cache locally
+                    t = urllib2.urlopen(filepath)
+                    self.trackline = unicode(asShape(geojson.loads(t.read())).wkt)
+        return self.trackline
 
     def task(self):
         return AsyncResult(self.task_id)
@@ -74,10 +94,9 @@ class Run(Document):
         elif ext == ".nc":
             file_type = "NetCDF"
         elif ext == ".json":
-            if name.find("trkl") != -1:
-                file_type = "Trackline (GeoJSON)"
-            else:
-                file_type = "JSON"
+            file_type = "JSON"
+        elif ext == ".geojson":
+            file_type = "Trackline (GeoJSON)"
         elif ext == ".mp4":
             file_type = "Cross section animation"
         elif ext == ".log":
@@ -90,7 +109,7 @@ class Run(Document):
 
     def run_config(self):
 
-        skip_keys = ['_id','cached_behavior','created','task_id','output']
+        skip_keys = ['_id','cached_behavior','created','task_id','output','trackline']
         d = {}
         for key,value in self.iteritems():
             try:

@@ -90,4 +90,5 @@ def run(run_dict):
         # Save results back to Run
         the_run = db.Run.find_one( { '_id' : ObjectId(run_id) } )
         the_run.output = result_files
+        the_run.compute()
         the_run.save()

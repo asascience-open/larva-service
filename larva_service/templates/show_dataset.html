@@ -1,0 +1,66 @@
+{% extends "layout.html" %}
+
+{% block javascript %}
+    {{ super() }}
+    <script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=false"></script>
+    <script type="text/javascript">
+        $(document).ready(function() {
+            // init map
+            var myOptions = {
+                center    : new google.maps.LatLng(0, 0),
+                zoom      : 10,
+                mapTypeId : google.maps.MapTypeId.ROADMAP,
+                maxZoom   : 8
+            };
+            var map = new google.maps.Map(document.getElementById("map_canvas"), myOptions);
+            var latlngbounds = new google.maps.LatLngBounds( );
+            {% if markers|length > 1 %}
+                var poly = new google.maps.Polygon({ map: map, path: [], strokeColor: "#FF0000", fillColor: "#FF0000", strokeOpacity: 1.0, strokeWeight: 2, fillOpacity: 0.35 });
+                {% for position in markers %}
+                    var ll = new google.maps.LatLng({{position[0]}}, {{position[1]}})
+                    poly.getPath().push(ll);
+                    latlngbounds.extend(ll);
+                {% endfor %}
+            {% elif markers|length == 1 %}
+                var pos = new google.maps.LatLng({{markers[0][0]}}, {{markers[0][1]}});
+                var marker = new google.maps.Marker({
+                    position: pos,
+                    icon: {
+                        path: google.maps.SymbolPath.CIRCLE,
+                        scale: 2
+                    },
+                    map: map
+                });
+                latlngbounds.extend( pos );
+            {% endif %}
+            map.fitBounds( latlngbounds );
+        })
+    </script>
+{% endblock %}
+
+{% block page %}
+
+    <h1>{{ dataset.name }}</h1>
+    <h2>{{ dataset.location }}</h2>
+    
+    <hr />
+
+    <div class="row">
+        <dl class="dl-horizontal span8">
+            {% for key, value in dataset|dictsort %}
+                {% if key != 'variables' %}
+                    <dt>{{ key }} </dt>
+                    <dd>{{ value }}</dd>
+                {% endif %}
+            {% endfor %}
+        </dl>
+
+        <div id="map_canvas" class="span4" style="height: 300px;"></div>
+    </div>
+
+    <h2>variables</h2>
+    <pre>
+{{ variables|safe }}
+    </pre>
+
+{% endblock %}

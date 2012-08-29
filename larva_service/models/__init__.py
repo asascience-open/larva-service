@@ -1,4 +1,4 @@
-from larva_service.models import task, run
+from larva_service.models import task, run, dataset
 
 def remove_mongo_keys(d):
 

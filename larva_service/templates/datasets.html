@@ -1,0 +1,43 @@
+{% extends "layout.html" %}
+
+{% block subnav %}
+    <div class="subnav subnav-fixed">
+        <div class="container">
+            <ul class="nav nav-pills">
+                <form method="POST" action="{{ url_for('add_dataset') }}" class="navbar-form pull-left">
+                  <input type="textarea" class="span4" name="name" id="name" placeholder="Name of dataset"></input>
+                  <input type="textarea" class="span4" name="location" id="location" placeholder="Paste DAP URL here"></input>
+                  <input type="submit" value="Add Dataset" class="btn"></input>
+                </form>
+            </ul>
+        </div>
+    </div>
+{% endblock %}
+
+{% block page %}
+
+    <table class="table table-striped table-bordered table-condensed">
+        <thead>
+            <tr>
+                <th>name</th>
+                <th>location</th>
+                <th>time interval</th>
+                <th>actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {%- for dataset in datasets %}
+            <tr>                
+                <td>{{ dataset.name }}</td>
+                <td>{{ dataset.location }}</td>
+                <td>{{ dataset.starting }} - {{ dataset.ending }}</td>
+                <td>
+                    <a href="{{ url_for('show_dataset', dataset_id=dataset._id) }}">View</a>
+                    <a href="{{ url_for('delete_dataset', dataset_id=dataset._id) }}">Delete</a>
+                </td>
+            </tr>
+        {%- endfor %}
+         </tbody>
+    </table>
+
+{% endblock %}

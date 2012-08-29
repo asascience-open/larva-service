@@ -7,7 +7,7 @@
             <script type="text/javascript" src="{{ url_for('.static', filename='bootstrap.js') }}" /></script>
         {% endblock %}
         {% block css %}
-            <link rel=stylesheet type=text/css href="{{ url_for('.static', filename='style.css') }}"></script>
+            <link rel=stylesheet type=text/css href="{{ url_for('.static', filename='style.css') }}"></link>
         {% endblock %}
     </head>
     <body>
@@ -29,7 +29,7 @@
         </div>
 
         {% block subnav %}{% endblock %}
-
+        <br />
         <div class="container">
             {%- with messages = get_flashed_messages(with_categories=true) %}
                 {%- if messages %}
@@ -44,4 +44,4 @@
             {% block page %}{% endblock %}
         </div>
     </body>
-</html
+</html>

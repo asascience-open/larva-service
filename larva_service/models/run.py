@@ -131,10 +131,17 @@ class Run(Document):
                 self[key] = datetime.fromtimestamp(value / 1000, pytz.utc)
                 continue
                 
+            if key == 'release_depth' or key == 'horiz_dispersion' or key == 'vert_dispersion':
+                self[key] = float(value)
+                continue
+
             self[key] = value
 
         if self.behavior:
-            b = urllib2.urlopen(self.behavior)
-            self.cached_behavior = json.loads(b.read())
+            try:
+                b = urllib2.urlopen(self.behavior)
+                self.cached_behavior = json.loads(b.read())
+            except:
+                pass
 
 db.register([Run])

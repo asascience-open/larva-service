@@ -7,7 +7,11 @@ import pytz
 from larva_service.models import remove_mongo_keys
 
 @app.route('/run', methods=['GET', 'POST'])
-def run_larva_model():
+@app.route('/run.<string:format>', methods=['GET', 'POST'])
+def run_larva_model(format=None):
+
+    if format is None:
+        format = 'html'
 
     if request.method == 'GET':
         run_details = request.args.get("config", None)
@@ -18,8 +22,12 @@ def run_larva_model():
     try:
         config_dict = json.loads(run_details)
     except:
-        flash("Could not decode parameters", 'error')
-        return redirect(url_for('runs'))
+        message = "Could not decode parameters"
+        if format == 'html':
+            flash(message, 'error')
+            return redirect(url_for('runs'))
+        elif format == 'json':
+            return jsonify( { 'results' : message } )
 
     run = db.Run()
     run.load_run_config(config_dict)
@@ -27,8 +35,13 @@ def run_larva_model():
     results = larva_run.delay(run.to_json())
     run.task_id = unicode(results.task_id)
     run.save()
-    flash("Run created", 'success')
-    return redirect(url_for('runs'))
+
+    message = "Run created"
+    if format == 'html':
+        flash(message, 'success')
+        return redirect(url_for('runs'))
+    elif format == 'json':
+        return jsonify( { 'results' : message } )
 
 @app.route('/runs/clear', methods=['GET'])
 def clear_runs():

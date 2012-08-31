@@ -54,7 +54,7 @@ def run(run_dict):
 
     # Setup Models
     models = []
-    if data['cached_behavior'] is not None:
+    if data['cached_behavior'] is not None and data['cached_behavior'].get('results', None) is not None:
         behavior_data = data['cached_behavior']['results'][0]
         l = LarvaBehavior(data=behavior_data)
         models.append(l)
@@ -85,6 +85,9 @@ def run(run_dict):
         k.set_acl('public-read')
         result_files.append("%s/%s" % (base_s3_url, filename))
         os.remove(outfile)
+
+    shutil.rmtree(output_path, ignore_errors=True)
+
 
     with app.app_context():
         # Save results back to Run

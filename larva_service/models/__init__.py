@@ -1,8 +1,11 @@
 from larva_service.models import task, run, dataset
 
-def remove_mongo_keys(d):
+def remove_mongo_keys(d, extra=None):
 
     remove_keys = ['_id','_collection','_database','_keywords']
+
+    if isinstance(extra, list):
+        remove_keys = list(set(remove_keys + extra))
 
     if d is not None:
         if isinstance(d, list):

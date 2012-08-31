@@ -41,7 +41,7 @@ def run_larva_model(format=None):
         flash(message, 'success')
         return redirect(url_for('runs'))
     elif format == 'json':
-        return jsonify( { 'results' : message } )
+        return jsonify( { 'results' : unicode(run['_id']) } )
 
 @app.route('/runs/clear', methods=['GET'])
 def clear_runs():
@@ -62,8 +62,10 @@ def runs(format=None):
         jsond = []
         for run in runs:
             js = json.loads(run.to_json())
-            remove_mongo_keys(js)
+            remove_mongo_keys(js, extra=['output', 'cached_behavior'])
             js['_id'] = unicode(run._id)
+            js['status'] = unicode(run.status())
+            js['output'] = list(run.output_files())
             jsond.append(js)
         return jsonify( { 'results' : jsond } )
     else:
@@ -86,8 +88,10 @@ def show_run(run_id, format=None):
         return render_template('show_run.html', run=run, run_config=run_config, cached_behavior=cached_behavior, markers=markers)
     elif format == 'json':
         jsond = json.loads(run.to_json())
-        remove_mongo_keys(jsond) #destructive method
+        remove_mongo_keys(jsond, extra=['output'])
         jsond['_id'] = unicode(run._id)
+        jsond['status'] = unicode(run.status())
+        jsond['output'] = list(run.output_files())
         return jsonify( jsond )
     else:
         flash("Reponse format '%s' not supported" % format)

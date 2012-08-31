@@ -7,6 +7,10 @@ def calc(dataset_id):
     with app.app_context():
         # Save results back to Run
         dataset = db.Dataset.find_one( { '_id' : ObjectId(dataset_id) } )
+        
+        if dataset is None:
+            return "No Dataset exists to update, aborting update process for ID %s" % dataset_id
+
         dataset.calc()
         dataset.updated = datetime.utcnow()
         dataset.save()
@@ -14,6 +18,6 @@ def calc(dataset_id):
         # Do this again in 3 hours
         hours = 3
         seconds = hours * 60. * 60.
-        calc.apply_async([dataset_id], countdown=seconds)
+        calc.apply_async([dataset_id], countdown=seconds, queue='datasets')
 
         return "Successfully updated dataset %s (%s)" % (str(dataset['_id']), dataset.name)

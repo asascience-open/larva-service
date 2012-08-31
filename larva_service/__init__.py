@@ -12,10 +12,13 @@ app.config.from_object('larva_service.defaults')
 app.config.from_envvar('APPLICATION_SETTINGS', silent=True)
 
 class CeleryConfig(object):
+    CELERY_DEFAULT_QUEUE = 'default'
     CELERY_RESULT_BACKEND = 'mongodb'
     CELERY_RESULT_SERIALIZER = 'json'
     CELERY_TASK_SERIALIZER = 'json'
     CELERY_TRACK_STARTED = True
+    CELERY_ROUTES = { 'larva_service.tasks.dataset.calc': {'queue': 'datasets'},
+                      'larva_service.tasks.larva.run':  {'queue': 'runs'}}
     CELERY_MONGODB_BACKEND_SETTINGS = {
         "host"                  : app.config.get("MONGODB_HOST"),
         "port"                  : app.config.get("MONGODB_PORT"),

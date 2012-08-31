@@ -1,7 +1,7 @@
 Flask==0.9
 Flask-MongoKit==0.6
 Flask-WTF==0.8
-gunicorn==0.13.4
+gunicorn==0.14.6
 mongokit==0.8
 Celery==3.0.5
 celery-with-mongodb==3.0

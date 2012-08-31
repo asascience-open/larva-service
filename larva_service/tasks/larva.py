@@ -84,7 +84,7 @@ def run(run_dict):
         k.set_contents_from_filename(outfile)
         k.set_acl('public-read')
         result_files.append("%s/%s" % (base_s3_url, filename))
-        #os.remove(outfile)
+        os.remove(outfile)
 
     with app.app_context():
         # Save results back to Run

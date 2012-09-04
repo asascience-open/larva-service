@@ -34,7 +34,7 @@ app.config.from_object(CeleryConfig)
 if app.config.get('LOG_FILE') == True:
     import logging
     from logging import FileHandler
-    file_handler = FileHandler('log.txt')
+    file_handler = FileHandler('logs/larva_service.txt')
     file_handler.setLevel(logging.INFO)
     app.logger.addHandler(file_handler)
 

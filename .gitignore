@@ -29,7 +29,7 @@ pip-log.txt
 .env
 *.diff
 *.bak
-*log*
+logs/*.log
 *.swp
 
 cache/*

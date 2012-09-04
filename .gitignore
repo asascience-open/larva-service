@@ -30,6 +30,7 @@ pip-log.txt
 *.diff
 *.bak
 logs/*.log
+logs/*.txt
 *.swp
 
 cache/*

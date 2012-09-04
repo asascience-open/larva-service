@@ -13,3 +13,4 @@ git+https://github.com/asascience-open/paegan.git@master#egg=paegan
 shapely==1.2.15
 boto==2.5.2
 geojson==1.0.1
+flower==0.3.1

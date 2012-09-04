@@ -9,7 +9,4 @@ MONGODB_USERNAME = 'larvamap'
 MONGODB_PASSWORD = 'yourpassword'
 
 # Celery
-BROKER_URL = 'redis://localhost:6379/0'
-BROKER_POOL_LIMIT = 10
-
 S3_BUCKET = "larvamap-development"

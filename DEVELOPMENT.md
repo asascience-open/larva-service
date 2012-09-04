@@ -48,3 +48,7 @@ Assumes you have:
     $ heroku addons:add redistogo:nano
     $ git push heroku master
     $ heroku ps:scale web=1 celeryd=1
+
+## Setting up foreman to upstart (on production)
+
+    $ foreman export upstart /etc/init -u larva -p 8000 -l /home/larva/larva-service/logs -a larva

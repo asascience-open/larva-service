@@ -13,6 +13,6 @@ MONGODB_DATABASE = url.path[1:]
 
 # Celery
 BROKER_URL = os.environ.get('REDISTOGO_URL')
-CELERY_REDIS_MAX_CONNECTIONS = 4
+BROKER_POOL_LIMIT = 4
 
 S3_BUCKET = "larvamap-production"

@@ -17,7 +17,7 @@ class CeleryConfig(object):
     CELERY_RESULT_SERIALIZER = 'json'
     CELERY_TASK_SERIALIZER = 'json'
     CELERY_TRACK_STARTED = True
-    CELERY_REDIS_MAX_CONNECTIONS = app.config.get('CELERY_REDIS_MAX_CONNECTIONS', 10)
+    BROKER_POOL_LIMIT = app.config.get('BROKER_POOL_LIMIT', 10)
     CELERY_ROUTES = { 'larva_service.tasks.dataset.calc': {'queue': 'datasets'},
                       'larva_service.tasks.larva.run':  {'queue': 'runs'}}
     CELERY_MONGODB_BACKEND_SETTINGS = {

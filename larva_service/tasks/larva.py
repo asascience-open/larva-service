@@ -92,6 +92,10 @@ def run(run_dict):
     with app.app_context():
         # Save results back to Run
         the_run = db.Run.find_one( { '_id' : ObjectId(run_id) } )
+        if the_run is None:
+            return "Failed to run %s" % run_id)
+
         the_run.output = result_files
         the_run.compute()
         the_run.save()
+        return "Successfully ran %s" % run_id)

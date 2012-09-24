@@ -1,4 +1,4 @@
-from flask import render_template
+from flask import render_template, make_response
 from larva_service import app
 
 @app.route('/', methods=['GET'])

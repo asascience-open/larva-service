@@ -16,9 +16,10 @@ from paegan.transport.model_controller import ModelController
 
 from paegan.logging.multi_process_logging import MultiProcessingLogHandler
 
+from paegan.viz.trajectory import CFTrajectory
+
 from boto.s3.connection import S3Connection
 from boto.s3.key import Key
-from boto.s3.connection import ProtocolIndependentOrdinaryCallingFormat
 
 from bson.objectid import ObjectId
 
@@ -69,6 +70,14 @@ def run(run_dict):
 
     # Close log handler
     handler.close()
+
+    # Create movie output
+    for filename in os.listdir(output_path):
+        if os.path.splitext(filename)[1][1:] == "nc":
+            # Found netCDF file
+            netcdf_file = os.path.join(output_path,filename)
+            traj = CFTrajectory(netcdf_file)
+            traj.plot_animate(os.path.join(output_path,'animation.mp4'), view=(0,-90), bathy=app.config['BATHY_PATH'])
 
     # Handle results
     result_files = []

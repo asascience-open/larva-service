@@ -93,6 +93,8 @@ class Run(Document):
                 file_type = "Zipfile"
         elif ext == ".nc":
             file_type = "NetCDF"
+        elif ext == ".cache":
+            file_type = "Forcing Data"
         elif ext == ".json":
             file_type = "JSON"
         elif ext == ".geojson":

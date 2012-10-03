@@ -98,7 +98,7 @@ class Run(Document):
         elif ext == ".geojson":
             file_type = "Trackline (GeoJSON)"
         elif ext == ".mp4":
-            file_type = "Cross section animation"
+            file_type = "Animation"
         elif ext == ".log":
             file_type = "Logfile"
 

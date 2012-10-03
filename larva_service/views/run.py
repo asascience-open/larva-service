@@ -43,6 +43,24 @@ def run_larva_model(format=None):
     elif format == 'json':
         return jsonify( { 'results' : unicode(run['_id']) } )
 
+@app.route('/runs/<ObjectId:run_id>/delete', methods=['GET','DELETE'])
+@app.route('/runs/<ObjectId:run_id>/delete.<string:format>', methods=['GET','DELETE'])
+def delete_run(run_id, format=None):
+    if format is None:
+        format = 'html'
+
+    run = db.Run.find_one( { '_id' : run_id } )
+
+    task = db.Task.find_one( {'_id' : run.task_id })
+
+    run.delete()
+
+    if format == 'json':
+        return jsonify( { 'status' : "success" })
+    else:
+        flash("Run deleted")
+        return redirect(url_for('runs'))
+
 @app.route('/runs/clear', methods=['GET'])
 def clear_runs():
     db.drop_collection("runs")

@@ -9,6 +9,7 @@ celery-with-mongodb==3.0
 celery-with-redis==3.0
 pytz==2012d
 numpy==1.6.2
+git+http://github.com/matplotlib/basemap.git@v1.0.5rel#egg=basemap
 git+https://github.com/asascience-open/paegan.git@master#egg=paegan
 git+https://github.com/asascience-open/paegan-viz.git@master#egg=paegan-viz
 shapely==1.2.15

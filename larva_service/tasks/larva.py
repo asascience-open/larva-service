@@ -40,7 +40,8 @@ def run(run_dict):
 
     # Set up output directory/bucket for run
     output_formats = ['Shapefile','NetCDF','Trackline']
-    output_path = os.path.join(os.path.dirname(__file__), '..', '..', 'output', run_id)
+
+    output_path = os.path.join(app.config['OUTPUT_PATH'], run_id)
     shutil.rmtree(output_path, ignore_errors=True)
     os.makedirs(output_path)
 
@@ -66,10 +67,14 @@ def run(run_dict):
         time_chunk=data['time_chunk'], horiz_chunk=data['horiz_chunk'], time_method=data['time_method'])
 
     # Run the model
-    model.run(data['hydro_path'], output_path=output_path, output_formats=output_formats, cache=os.path.join(os.path.dirname(__file__), '..', '..', 'cache'))
+    cache_file = os.path.join(app.config['CACHE_PATH'], "hydro_" + run_id + ".cache")
+    model.run(data['hydro_path'], output_path=output_path, output_formats=output_formats, cache=cache_file, remove_cache=False)
 
     # Close log handler
     handler.close()
+
+    # Move cache file to output directory so it gets uploaded to S3
+    shutil.move(cache_file, output_path)
 
     # Create movie output
     for filename in os.listdir(output_path):

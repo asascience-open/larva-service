@@ -82,7 +82,11 @@ def run(run_dict):
             # Found netCDF file
             netcdf_file = os.path.join(output_path,filename)
             traj = CFTrajectory(netcdf_file)
-            traj.plot_animate(os.path.join(output_path,'animation.mp4'), view=(0,-90), bathy=app.config['BATHY_PATH'])
+            success = traj.plot_animate(os.path.join(output_path,'animation.mp4'), bathy=app.config['BATHY_PATH'])
+            if not success:
+                logger.info("Could not create animation")
+            else:
+                logger.info("Animation saved")
 
     # Handle results
     result_files = []

@@ -57,7 +57,7 @@
         <tbody>
             <tr>
                 <td>{{ run.created }}</td>
-                <td><a href="{{ url_for('show_task', task_id=run.task_id) }}">{{ run.task_id }}</a></td>
+                <td>{{ run.task_id }}</td>
             </tr>
          </tbody>
     </table>
@@ -88,6 +88,11 @@
     <h2>run_config</h2>
     <pre>
 {{ run_config|safe }}
+    </pre>
+
+    <h2>result</h2>
+    <pre>
+{{ run.result }}
     </pre>
 
     <h2>cached_behavior</h2>

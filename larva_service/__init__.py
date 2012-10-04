@@ -13,21 +13,11 @@ app.config.from_envvar('APPLICATION_SETTINGS', silent=True)
 
 class CeleryConfig(object):
     CELERY_DEFAULT_QUEUE = 'default'
-    CELERY_RESULT_BACKEND = 'mongodb'
-    CELERY_RESULT_SERIALIZER = 'json'
-    CELERY_TASK_SERIALIZER = 'json'
+    CELERY_RESULT_BACKEND = app.config.get("BROKER_URL")
+    #CELERY_TASK_SERIALIZER = 'json'
     CELERY_TRACK_STARTED = True
-    BROKER_POOL_LIMIT = app.config.get('BROKER_POOL_LIMIT', 10)
     CELERY_ROUTES = { 'larva_service.tasks.dataset.calc': {'queue': 'datasets'},
                       'larva_service.tasks.larva.run':  {'queue': 'runs'}}
-    CELERY_MONGODB_BACKEND_SETTINGS = {
-        "host"                  : app.config.get("MONGODB_HOST"),
-        "port"                  : app.config.get("MONGODB_PORT"),
-        "user"                  : app.config.get("MONGODB_USERNAME"),
-        "password"              : app.config.get("MONGODB_PASSWORD"),
-        "database"              : app.config.get("MONGODB_DATABASE"),
-        "taskmeta_collection"   : 'tasks'
-    }
 app.config.from_object(CeleryConfig)
 
 # Setup CACHE_PATH

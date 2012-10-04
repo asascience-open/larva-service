@@ -64,6 +64,9 @@ class Run(Document):
     def task(self):
         return AsyncResult(self.task_id)
 
+    def result(self):
+        return self.task().result
+
     def status(self):
         return self.task().state
 
@@ -99,7 +102,7 @@ class Run(Document):
             file_type = "JSON"
         elif ext == ".geojson":
             file_type = "Trackline (GeoJSON)"
-        elif ext == ".mp4":
+        elif ext == ".avi":
             file_type = "Animation"
         elif ext == ".log":
             file_type = "Logfile"

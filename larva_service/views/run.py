@@ -1,7 +1,7 @@
 from flask import render_template, redirect, url_for, request, flash, jsonify
 from larva_service import app, db
+from celery.task.control import revoke
 from larva_service.tasks.larva import run as larva_run
-from larva_service.models.task import Task
 import json
 import pytz
 from larva_service.models import remove_mongo_keys
@@ -20,7 +20,7 @@ def run_larva_model(format=None):
 
     config_dict = None
     try:
-        config_dict = json.loads(run_details)
+        config_dict = json.loads(run_details.strip())
     except:
         message = "Could not decode parameters"
         if format == 'html':
@@ -32,7 +32,9 @@ def run_larva_model(format=None):
     run = db.Run()
     run.load_run_config(config_dict)
     run.save()
-    results = larva_run.delay(run.to_json())
+
+    # Pass in the Run ID to the task
+    results = larva_run.delay(run['_id'])
     run.task_id = unicode(results.task_id)
     run.save()
 
@@ -51,7 +53,8 @@ def delete_run(run_id, format=None):
 
     run = db.Run.find_one( { '_id' : run_id } )
 
-    task = db.Task.find_one( {'_id' : run.task_id })
+    # Kill the Celery task
+    revoke(run.task_id, terminate=True)
 
     run.delete()
 

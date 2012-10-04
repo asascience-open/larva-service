@@ -11,5 +11,4 @@ class FlaskMongoTestCase(unittest.TestCase):
         self.db = Connection(app.config['MONGODB_HOST'], app.config['MONGODB_PORT'])[app.config['MONGODB_DATABASE']]
 
     def tearDown(self):
-        self.db.drop_collection("tasks")
         self.db.drop_collection("runs")

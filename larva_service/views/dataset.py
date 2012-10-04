@@ -11,7 +11,7 @@ def add_dataset():
     dataset.location = request.form.get("location")
     dataset.save()
 
-    calc.delay(unicode(dataset['_id']))
+    calc.delay(dataset['_id'])
 
     flash("Dataset created", 'success')
     return redirect(url_for('datasets'))

@@ -82,7 +82,8 @@ def run(run_id):
                 logger.info("No cache file from model exists")
                 pass
 
-            # Create movie output
+            # Skip creating movie output
+            """
             logger.info("Creating animation...")
             for filename in os.listdir(output_path):
                 if os.path.splitext(filename)[1][1:] == "nc":
@@ -94,6 +95,7 @@ def run(run_id):
                         logger.info("Could not create animation")
                     else:
                         logger.info("Animation saved")
+            """
 
             del model
             return "Successfully ran %s" % run_id

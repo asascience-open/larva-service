@@ -7,6 +7,7 @@ from shapely.geometry import Point
 from shapely.wkt import loads
 from paegan.cdm.dataset import CommonDataset
 from shapely.geometry import box
+from celery.result import AsyncResult
 
 class Dataset(Document):
     __collection__ = 'datasets'
@@ -22,12 +23,22 @@ class Dataset(Document):
         'variables'         : dict,     # dict of variables, including attributes
         'keywords'          : list,     # keywords pulled from global attributes of dataset
         'messages'          : list,     # Error messages
+        'task_id'           : unicode,  # Task processing the dataset
         'created'           : datetime,
         'updated'           : datetime
     }
     default_values = {
                       'created': datetime.utcnow
                       }
+
+    def asynctask(self):
+        return AsyncResult(self.task_id)
+
+    def result(self):
+        return self.asynctask().info
+
+    def status(self):
+        return self.asynctask().state
 
     def calc(self):
         """

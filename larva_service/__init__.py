@@ -14,6 +14,8 @@ app.config.from_envvar('APPLICATION_SETTINGS', silent=True)
 class CeleryConfig(object):
     CELERY_DEFAULT_QUEUE = 'default'
     CELERY_RESULT_BACKEND = app.config.get("BROKER_URL")
+    # Reduces overhead
+    CELERY_DISABLE_RATE_LIMITS = True
     #CELERY_TASK_SERIALIZER = 'json'
     CELERY_TRACK_STARTED = True
     CELERY_ROUTES = { 'larva_service.tasks.dataset.calc': {'queue': 'datasets'},

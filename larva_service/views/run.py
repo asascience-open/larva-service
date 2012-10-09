@@ -5,6 +5,7 @@ from larva_service.tasks.larva import run as larva_run
 import json
 import pytz
 from larva_service.models import remove_mongo_keys
+from pymongo import DESCENDING
 
 @app.route('/run', methods=['GET', 'POST'])
 @app.route('/run.<string:format>', methods=['GET', 'POST'])
@@ -34,7 +35,7 @@ def run_larva_model(format=None):
     run.save()
 
     # Pass in the Run ID to the task
-    results = larva_run.delay(run['_id'])
+    results = larva_run.delay(unicode(run['_id']))
     run.task_id = unicode(results.task_id)
     run.save()
 
@@ -75,7 +76,7 @@ def runs(format=None):
     if format is None:
         format = 'html'
 
-    runs = db.Run.find()
+    runs = db.Run.find().sort('created', DESCENDING)
 
     if format == 'html':
         return render_template('runs.html', runs=runs)

@@ -16,13 +16,13 @@
         <tbody>
         {%- for queue,listing in active.items() %}
             {%- for task in listing %}
-
+            <tr>
                 <td>{{ queue }}</td>
                 <td>{{ task['name'] }}</td>
                 <td>{{ task['id'] }}</td>
                 <td>{{ task['args'] }}</td>
                 <td>{{ task['kwargs'] }}</td>
-
+            </tr>
             {%- endfor %}
         {%- endfor %}
          </tbody>
@@ -42,13 +42,13 @@
         <tbody>
         {%- for queue,listing in waiting.items() %}
             {%- for task in listing %}
-
+            <tr>
                 <td>{{ queue }}</td>
                 <td>{{ task['name'] }}</td>
                 <td>{{ task['id'] }}</td>
                 <td>{{ task['args'] }}</td>
                 <td>{{ task['kwargs'] }}</td>
-
+            </tr>
             {%- endfor %}
         {%- endfor %}
          </tbody>
@@ -70,7 +70,7 @@
         <tbody>
         {%- for queue,listing in scheduled.items() %}
             {%- for task in listing %}
-
+            <tr>
                 <td>{{ queue }}</td>
                 <td>{{ task['name'] }}</td>
                 <td>{{ task['id'] }}</td>
@@ -78,6 +78,7 @@
                 <td>{{ task['priority'] }}</td>
                 <td>{{ task['request']['args'] }}</td>
                 <td>{{ task['request']['kwargs'] }}</td>
+            </tr>                
             {%- endfor %}
         {%- endfor %}
          </tbody>

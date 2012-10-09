@@ -61,14 +61,14 @@ class Run(Document):
                     self.trackline = unicode(asShape(geojson.loads(t.read())).wkt)
         return self.trackline
 
-    def task(self):
+    def asynctask(self):
         return AsyncResult(self.task_id)
 
     def result(self):
-        return self.task().result
+        return self.asynctask().result
 
     def status(self):
-        return self.task().state
+        return self.asynctask().state
 
     def google_maps_coordinates(self):
         marker_positions = []

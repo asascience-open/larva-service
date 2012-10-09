@@ -3,6 +3,7 @@ from larva_service import app, db
 import json
 from larva_service.models import remove_mongo_keys
 from larva_service.tasks.dataset import calc
+from celery.task.control import revoke
 
 @app.route('/dataset', methods=['POST'])
 def add_dataset():
@@ -11,7 +12,9 @@ def add_dataset():
     dataset.location = request.form.get("location")
     dataset.save()
 
-    calc.delay(dataset['_id'])
+    results = calc.delay(unicode(dataset['_id']))
+    dataset.task_id = unicode(results.task_id)
+    dataset.save()
 
     flash("Dataset created", 'success')
     return redirect(url_for('datasets'))
@@ -66,6 +69,7 @@ def delete_dataset(dataset_id, format=None):
         format = 'html'
 
     dataset = db.Dataset.find_one( { '_id' : dataset_id } )
+    revoke(dataset.task_id, terminate=True)
     dataset.delete()
 
     if format == 'json':
@@ -73,3 +77,41 @@ def delete_dataset(dataset_id, format=None):
     else:
         flash("Dataset deleted")
         return redirect(url_for('datasets'))
+
+@app.route('/datasets/<ObjectId:dataset_id>/scan', methods=['GET'])
+@app.route('/datasets/<ObjectId:dataset_id>/scan.<string:format>', methods=['GET'])
+def scan_dataset(dataset_id, format=None):
+    if format is None:
+        format = 'html'
+
+    dataset = db.Dataset.find_one( { '_id' : dataset_id } )
+    dataset.calc()
+    dataset.save()
+
+    if format == 'json':
+        return jsonify( { 'status' : "success" })
+    else:
+        flash("Dataset updated")
+        return redirect(url_for('datasets'))
+
+@app.route('/datasets/<ObjectId:dataset_id>/schedule', methods=['GET'])
+@app.route('/datasets/<ObjectId:dataset_id>/schedule.<string:format>', methods=['GET'])
+def schedule_dataset(dataset_id, format=None):
+    if format is None:
+        format = 'html'
+
+    dataset = db.Dataset.find_one( { '_id' : dataset_id } )
+    results = calc.delay(dataset['_id'])
+    dataset.task_id = unicode(results.task_id)
+    dataset.save()
+
+    if format == 'json':
+        return jsonify( { 'status' : "success" })
+    else:
+        flash("Dataset scheduled for periodic update")
+        return redirect(url_for('datasets'))
+
+@app.route('/datasets/clear', methods=['GET'])
+def clear_datasets():
+    db.drop_collection("datasets")
+    return redirect(url_for('datasets'))

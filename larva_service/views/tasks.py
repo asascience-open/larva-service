@@ -1,6 +1,7 @@
 from flask import make_response, render_template
 from larva_service import app, db, celery
 import json
+from celery.task.control import revoke
 
 @app.route('/tasks', methods=['GET'])
 @app.route('/tasks.<string:format>', methods=['GET'])
@@ -12,9 +13,9 @@ def tasks(format=None):
         app.logger.warn(e)
         nodes = None
 
-    active = {}
-    scheduled = {}
-    waiting = {}
+    active = None
+    scheduled = None
+    waiting = None
 
     if nodes is not None:
         try:
@@ -31,5 +32,13 @@ def tasks(format=None):
             waiting = nodes.reserved()
         except Exception as e:
             app.logger.warn(e)
+
+    if active is None:
+        active = {}
+    if scheduled is None:
+        scheduled = {}
+    if waiting is None:
+        waiting = {}
+
 
     return render_template('tasks.html', active=active, scheduled=scheduled, waiting=waiting)

@@ -26,11 +26,28 @@ from bson.objectid import ObjectId
 def run(run_id):
 
     with app.app_context():
-        run = db.Run.find_one( { '_id' : run_id } )
-        if run is None:
-            return "Failed to locate run %s. May have been deleted while task was in the queue?" % unicode(run_id)
+
+        output_path = os.path.join(app.config['OUTPUT_PATH'], run_id)
+        temp_animation_path = os.path.join(app.config['OUTPUT_PATH'], "temp_images_" + run_id)
+
+        shutil.rmtree(output_path, ignore_errors=True)
+        os.makedirs(output_path)
+
+        # Set up Logger
+        logger = multiprocessing.get_logger()
+        logger.setLevel(logging.INFO)
+        handler = MultiProcessingLogHandler(os.path.join(output_path, '%s.log' % run_id))
+        handler.setLevel(logging.INFO)
+        formatter = logging.Formatter('[%(asctime)s] - %(levelname)s - %(name)s - %(processName)s - %(message)s')
+        handler.setFormatter(formatter)
+        logger.addHandler(handler)
 
         try:
+
+            run = db.Run.find_one( { '_id' : ObjectId(run_id) } )
+            if run is None:
+                return "Failed to locate run %s. May have been deleted while task was in the queue?" % run_id
+
             geometry = loads(run['geometry'])
             start_depth = run['release_depth']
             num_particles = run['particles']
@@ -40,19 +57,6 @@ def run(run_id):
 
             # Set up output directory/bucket for run
             output_formats = ['Shapefile','NetCDF','Trackline']
-
-            output_path = os.path.join(app.config['OUTPUT_PATH'], unicode(run_id))
-            shutil.rmtree(output_path, ignore_errors=True)
-            os.makedirs(output_path)
-
-            # Set up Logger
-            logger = multiprocessing.get_logger()
-            logger.setLevel(logging.INFO)
-            handler = MultiProcessingLogHandler(os.path.join(output_path, '%s.log' % unicode(run_id)))
-            handler.setLevel(logging.INFO)
-            formatter = logging.Formatter('[%(asctime)s] - %(levelname)s - %(name)s - %(processName)s - %(message)s')
-            handler.setFormatter(formatter)
-            logger.addHandler(handler)
 
             # Setup Models
             models = []
@@ -67,7 +71,7 @@ def run(run_id):
                 time_chunk=run['time_chunk'], horiz_chunk=run['horiz_chunk'], time_method=run['time_method'])
 
             # Run the model
-            cache_file = os.path.join(app.config['CACHE_PATH'], "hydro_" + unicode(run_id) + ".cache")
+            cache_file = os.path.join(app.config['CACHE_PATH'], "hydro_" + run_id + ".cache")
             model.run(run['hydro_path'], output_path=output_path, output_formats=output_formats, cache=cache_file, remove_cache=False)
 
             # Move cache file to output directory so it gets uploaded to S3
@@ -79,45 +83,51 @@ def run(run_id):
                 pass
 
             # Create movie output
+            logger.info("Creating animation...")
             for filename in os.listdir(output_path):
                 if os.path.splitext(filename)[1][1:] == "nc":
                     # Found netCDF file
                     netcdf_file = os.path.join(output_path,filename)
                     traj = CFTrajectory(netcdf_file)
-                    success = traj.plot_animate(os.path.join(output_path,'animation.avi'), bathy=app.config['BATHY_PATH'])
+                    success = traj.plot_animate(os.path.join(output_path,'animation.avi'), temp_folder=temp_animation_path, bathy=app.config['BATHY_PATH'])
                     if not success:
                         logger.info("Could not create animation")
                     else:
                         logger.info("Animation saved")
 
-            # Handle results
+            del model
+            return "Successfully ran %s" % run_id
+            
+        except:
+            logger.warn("Run FAILED, cleaning up and uploading log.")
+            raise
+
+        finally:
+
+            # Handle results and cleanup
             result_files = []
-            base_s3_url = "http://%s.s3.amazonaws.com/output/%s" % (app.config['S3_BUCKET'], unicode(run_id))
+            base_s3_url = "http://%s.s3.amazonaws.com/output/%s" % (app.config['S3_BUCKET'], run_id)
             # Upload results to S3 and remove the local copies
             conn = S3Connection()
             bucket = conn.get_bucket(app.config['S3_BUCKET'])
+            logger.info("Uploading files to to S3...")
+
+            # Close the handler so we can upload the log file without a file lock
+            handler.close()
+
             for filename in os.listdir(output_path):
                 outfile = os.path.join(output_path,filename)
-                logger.info("Uploading %s to S3" % outfile)
                 k = Key(bucket)
-                k.key = "output/%s/%s" % (unicode(run_id), filename)
+                k.key = "output/%s/%s" % (run_id, filename)
                 k.set_contents_from_filename(outfile)
                 k.set_acl('public-read')
                 result_files.append("%s/%s" % (base_s3_url, filename))
                 os.remove(outfile)
 
             shutil.rmtree(output_path, ignore_errors=True)
-
+            shutil.rmtree(temp_animation_path, ignore_errors=True)
 
             # Set output fields
             run.output = result_files
             run.compute()
             run.save()
-            return "Successfully ran %s" % unicode(run_id)
-
-            del model
-            handler.close()
-            logger.shutdown()
-            
-        except:
-            raise

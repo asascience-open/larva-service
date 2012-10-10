@@ -115,6 +115,7 @@ def run(run_id):
             logger.info("Uploading files to to S3...")
 
             # Close the handler so we can upload the log file without a file lock
+            logger.removeHandler(handler)
             handler.close()
 
             for filename in os.listdir(output_path):

@@ -33,10 +33,16 @@ def run(run_id):
         shutil.rmtree(output_path, ignore_errors=True)
         os.makedirs(output_path)
 
+        queue = multiprocessing.Queue(-1)
+
         # Set up Logger
         logger = multiprocessing.get_logger()
+        # Close any existing handlers
+        (hand.close() for hand in logger.handlers)
+        # Remove any existing handlers
+        logger.handlers = []
         logger.setLevel(logging.INFO)
-        handler = MultiProcessingLogHandler(os.path.join(output_path, '%s.log' % run_id))
+        handler = MultiProcessingLogHandler(os.path.join(output_path, '%s.log' % run_id), queue)
         handler.setLevel(logging.INFO)
         formatter = logging.Formatter('[%(asctime)s] - %(levelname)s - %(name)s - %(processName)s - %(message)s')
         handler.setFormatter(formatter)
@@ -115,8 +121,13 @@ def run(run_id):
             logger.info("Uploading files to to S3...")
 
             # Close the handler so we can upload the log file without a file lock
-            logger.removeHandler(handler)
-            handler.close()
+            (hand.close() for hand in logger.handlers)
+            #logger.removeHandler(handler)
+            del formatter
+            del handler
+            del logger
+
+            queue.close()            
 
             for filename in os.listdir(output_path):
                 outfile = os.path.join(output_path,filename)

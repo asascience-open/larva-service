@@ -124,11 +124,12 @@ def run(run_id):
             # Close the handler so we can upload the log file without a file lock
             (hand.close() for hand in logger.handlers)
             #logger.removeHandler(handler)
-            del formatter
-            del handler
-            del logger
+            #del formatter
+            #del handler
+            #del logger
 
-            queue.close()            
+            #queue.close()
+            queue.put(StopIteration)
 
             for filename in os.listdir(output_path):
                 outfile = os.path.join(output_path,filename)

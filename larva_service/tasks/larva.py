@@ -84,7 +84,7 @@ def run(run_id):
             # Move cache file to output directory so it gets uploaded to S3
             try:
                 shutil.move(cache_file, output_path)
-            except:
+            except (IOError, OSError):
                 # The cache file was probably never written because the model failed
                 logger.info("No cache file from model exists")
                 pass
@@ -107,7 +107,7 @@ def run(run_id):
             del model
             return "Successfully ran %s" % run_id
             
-        except:
+        except Exception:
             logger.warn("Run FAILED, cleaning up and uploading log.")
             raise
 

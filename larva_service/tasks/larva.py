@@ -78,7 +78,8 @@ def run(run_id):
 
             # Run the model
             cache_file = os.path.join(app.config['CACHE_PATH'], "hydro_" + run_id + ".cache")
-            model.run(run['hydro_path'], output_path=output_path, output_formats=output_formats, cache=cache_file, remove_cache=False)
+            bathy_file = app.config['BATHY_PATH']
+            model.run(run['hydro_path'], output_path=output_path, bathy=bathy_file, output_formats=output_formats, cache=cache_file, remove_cache=False)
 
             # Move cache file to output directory so it gets uploaded to S3
             try:

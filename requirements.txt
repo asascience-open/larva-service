@@ -2,11 +2,11 @@ pymongo==2.2.1
 Flask==0.9
 Flask-MongoKit==0.6
 Flask-WTF==0.8
-gunicorn==0.14.6
+gunicorn
 mongokit==0.8
-Celery==3.0.5
-celery-with-mongodb==3.0
-celery-with-redis==3.0
+Celery==3.0.11
+celery-with-mongodb
+celery-with-redis
 pytz==2012d
 numpy==1.6.2
 git+http://github.com/matplotlib/basemap.git@v1.0.5rel#egg=basemap

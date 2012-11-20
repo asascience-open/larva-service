@@ -39,8 +39,8 @@ class Run(Document):
     }
     default_values = {
                       'created': datetime.utcnow,
-                      'time_chunk': 2,
-                      'horiz_chunk': 2
+                      'time_chunk': 10,
+                      'horiz_chunk': 5
                       }
 
     def compute(self):

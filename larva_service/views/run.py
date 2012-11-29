@@ -104,10 +104,11 @@ def show_run(run_id, format=None):
 
     if format == 'html':
         markers = run.google_maps_coordinates()
+        linestring = run.google_maps_trackline()
         run_config = json.dumps(run.run_config(), sort_keys=True, indent=4)
         cached_behavior = json.dumps(run.cached_behavior, sort_keys=True, indent=4)
         output_files = run.output_files()
-        return render_template('show_run.html', run=run, run_config=run_config, cached_behavior=cached_behavior, markers=markers)
+        return render_template('show_run.html', run=run, run_config=run_config, cached_behavior=cached_behavior, line=linestring, markers=markers)
     elif format == 'json':
         jsond = json.loads(run.to_json())
         remove_mongo_keys(jsond, extra=['output'])

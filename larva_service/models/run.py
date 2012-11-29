@@ -1,4 +1,4 @@
-from flask.ext.mongokit import Document
+from mongokit import Document, DocumentMigration
 from larva_service import db, app
 from datetime import datetime
 from celery.result import AsyncResult
@@ -12,6 +12,11 @@ import mimetypes
 from shapely.geometry import Point, Polygon, asShape
 import geojson
 from shapely.wkt import loads
+
+class RunMigration(DocumentMigration):
+    def allmigration01__add_results_field(self):
+        self.target = {'task_result':{'$exists': False}}
+        self.update = {'$set':{'task_result':""}}
 
 class Run(Document):
     __collection__ = 'runs'
@@ -35,13 +40,16 @@ class Run(Document):
        'task_id'            : unicode,
        'email'              : unicode,   # Email of the person who ran the model
        'output'             : list,
+       'task_result'        : unicode,
        'trackline'          : unicode
     }
     default_values = {
                       'created': datetime.utcnow,
-                      'time_chunk': 10,
-                      'horiz_chunk': 5
+                      'time_chunk'  : 10,
+                      'horiz_chunk' : 5
                       }
+    migration_handler = RunMigration
+
 
     def compute(self):
         """
@@ -51,6 +59,12 @@ class Run(Document):
             self.set_trackline()
         except:
             app.logger.warning("Could no compute (cache) model run results locally")
+
+        if self.trackline is not None and len(self.output) > 1:
+            self.task_result = u"SUCCESS"
+        else:
+            self.task_result = u"FAILURE"
+
 
     def set_trackline(self):
         if self.trackline is None:
@@ -65,10 +79,20 @@ class Run(Document):
         return AsyncResult(self.task_id)
 
     def result(self):
-        return self.asynctask().result
+        if self.task_result and self.task_result != "":
+            return self.task_result
+        else:
+            return self.asynctask().result
 
     def status(self):
         return self.asynctask().state
+
+    def google_maps_trackline(self):
+        if self.trackline:
+            geo = loads(self.trackline)
+            return geo.coords
+
+        return []
 
     def google_maps_coordinates(self):
         marker_positions = []

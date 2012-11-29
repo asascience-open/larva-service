@@ -33,6 +33,9 @@ def run(run_id):
         shutil.rmtree(output_path, ignore_errors=True)
         os.makedirs(output_path)
 
+        shutil.rmtree(temp_animation_path, ignore_errors=True)
+        os.makedirs(temp_animation_path)
+
         queue = multiprocessing.Queue(-1)
 
         # Set up Logger
@@ -97,7 +100,7 @@ def run(run_id):
             except (IOError, OSError):
                 logger.info("No cache file from model exists")
 
-            # Skip creating movie output
+            # Skip creating movie output_path
             """
             logger.info("Creating animation...")
             for filename in os.listdir(output_path):
@@ -111,8 +114,7 @@ def run(run_id):
                     else:
                         logger.info("Animation saved")
             """
-
-            del model
+            
             return "Successfully ran %s" % run_id
             
         except Exception:
@@ -131,14 +133,8 @@ def run(run_id):
 
             # Close the handler so we can upload the log file without a file lock
             (hand.close() for hand in logger.handlers)
-            #logger.removeHandler(handler)
-            #del formatter
-            #del handler
-            #del logger
-
-            #queue.close()
             queue.put(StopIteration)
-
+            
             for filename in os.listdir(output_path):
                 outfile = os.path.join(output_path,filename)
                 k = Key(bucket)
@@ -155,3 +151,11 @@ def run(run_id):
             run.output = result_files
             run.compute()
             run.save()
+
+            # Cleanup
+            logger.removeHandler(handler)
+            del formatter
+            del handler
+            del logger
+            del model
+            queue.close()

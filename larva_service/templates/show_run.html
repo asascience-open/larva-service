@@ -11,19 +11,29 @@
                 center    : new google.maps.LatLng(0, 0),
                 zoom      : 10,
                 mapTypeId : google.maps.MapTypeId.ROADMAP,
-                maxZoom   : 8
+                maxZoom   : 11
             };
             var map = new google.maps.Map(document.getElementById("map_canvas"), myOptions);
             var latlngbounds = new google.maps.LatLngBounds( );
-            {% if markers|length > 1 %}
+
+            {%- if line|length > 1 %}
+                var pl = new google.maps.Polyline({ map: map, path: [], strokeColor: "#FF0000", strokeOpacity: 1.0, strokeWeight: 2 })
+                {%- for lpt in line %}
+                    var lptpos = new google.maps.LatLng({{lpt[1]}}, {{lpt[0]}});
+                    pl.getPath().push(lptpos);
+                    latlngbounds.extend( lptpos );
+                {%- endfor -%}
+            {%- endif %}
+
+            {%- if markers|length > 1 %}
                 var poly = new google.maps.Polygon({ map: map, path: [], strokeColor: "#FF0000", fillColor: "#FF0000", strokeOpacity: 1.0, strokeWeight: 2, fillOpacity: 0.35 });
-                {% for position in markers %}
+                {%- for position in markers %}
                     poly.getPath().push(new google.maps.LatLng({{position[0]}}, {{position[1]}}));
                 {% endfor %}
                 for ( var i = 0; i < poly.getPath().length; i++ ) {
                     latlngbounds.extend( latlng[ i ] );
                 }
-            {% elif markers|length == 1 %}
+            {%- elif markers|length == 1 %}
                 var pos = new google.maps.LatLng({{markers[0][0]}}, {{markers[0][1]}});
                 var marker = new google.maps.Marker({
                     position: pos,
@@ -34,7 +44,7 @@
                     map: map
                 });
                 latlngbounds.extend( pos );
-            {% endif %}
+            {%- endif %}
             map.fitBounds( latlngbounds );
         })
     </script>
@@ -65,7 +75,7 @@
     <div class="row">
         <dl class="dl-horizontal span8">
             {% for key, value in run|dictsort %}
-                {% if key != 'cached_behavior' and key != 'output' %}
+                {% if key != 'cached_behavior' and key != 'output' and key != 'trackline' %}
                     <dt>{{ key }} </dt>
                     <dd>{{ value }}</dd>
                 {% endif %}

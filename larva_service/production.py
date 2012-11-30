@@ -1,6 +1,8 @@
 import os
 import urlparse
 
+LOG_FILE = True
+
 mongolab_uri = os.environ.get('MONGOLAB_URI')
 url = urlparse.urlparse(mongolab_uri)
 

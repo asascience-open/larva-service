@@ -15,8 +15,6 @@ from paegan.transport.model_controller import ModelController
 
 from paegan.logging.multi_process_logging import MultiProcessingLogHandler
 
-from paegan.viz.trajectory import CFTrajectory
-
 from boto.s3.connection import S3Connection
 from boto.s3.key import Key
 
@@ -102,6 +100,8 @@ def run(run_id):
 
             # Skip creating movie output_path
             """
+            from paegan.viz.trajectory import CFTrajectory
+            
             logger.info("Creating animation...")
             for filename in os.listdir(output_path):
                 if os.path.splitext(filename)[1][1:] == "nc":

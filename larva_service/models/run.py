@@ -85,7 +85,10 @@ class Run(Document):
             return self.asynctask().result
 
     def status(self):
-        return self.asynctask().state
+        if self.task_result and self.task_result != "":
+            return self.task_result
+        else:
+            return self.asynctask().state
 
     def google_maps_trackline(self):
         if self.trackline:

@@ -45,7 +45,7 @@ class Dataset(Document):
         Compute bounds for this dataset
         """
         try:
-            nc = CommonDataset(self.location)
+            nc = CommonDataset.open(self.location)
 
             query_var = nc.get_varname_from_stdname("eastward_sea_water_velocity")[0]
 

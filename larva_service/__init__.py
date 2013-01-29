@@ -3,24 +3,15 @@ import os
 from flask import Flask
 from flask.ext.mongokit import MongoKit
 
-from celery import Celery
-
 # Create application object
 app = Flask(__name__)
 
 app.config.from_object('larva_service.defaults')
 app.config.from_envvar('APPLICATION_SETTINGS', silent=True)
 
-class CeleryConfig(object):
-    CELERY_DEFAULT_QUEUE = 'default'
-    CELERY_RESULT_BACKEND = app.config.get("BROKER_URL")
-    # Reduces overhead
-    CELERY_DISABLE_RATE_LIMITS = True
-    #CELERY_TASK_SERIALIZER = 'json'
-    CELERY_TRACK_STARTED = True
-    CELERY_ROUTES = { 'larva_service.tasks.dataset.calc': {'queue': 'datasets'},
-                      'larva_service.tasks.larva.run':  {'queue': 'runs'}}
-app.config.from_object(CeleryConfig)
+# Setup RQ Dashboard
+from rq_dashboard import RQDashboard
+RQDashboard(app)
 
 # Setup CACHE_PATH
 if app.config.get('CACHE_PATH', None) is None:
@@ -42,13 +33,17 @@ if app.config.get('LOG_FILE') == True:
     file_handler.setLevel(logging.INFO)
     app.logger.addHandler(file_handler)
 
-# Create celery object
-celery = Celery(__name__)
-# Now configure celety
-celery.conf.add_defaults(app.config)
-
 # Create the database connection
 db = MongoKit(app)
+
+
+# Create the Redis connection
+import redis
+from rq import Queue
+redis_connection = redis.from_url(app.config.get("REDIS_URI"))
+run_queue = Queue('runs', connection=redis_connection, default_timeout=604800) # 1 week timeout
+dataset_queue = Queue('datasets', connection=redis_connection, default_timeout=600) # 10 min timeout
+
 
 # Import everything
 import larva_service.views

@@ -1,6 +1,5 @@
-from larva_service import celery, app, db
+from larva_service import app, db
 from time import sleep
-from celery import current_task
 from shapely.wkt import dumps, loads
 import json
 import pytz
@@ -20,11 +19,17 @@ from boto.s3.key import Key
 
 from bson.objectid import ObjectId
 
-@celery.task()
+from rq import get_current_job
+
 def run(run_id):
 
     with app.app_context():
 
+        job = get_current_job()
+
+        job.meta["progress"] = 0
+        job.meta["message"] = "Setting up output directories"
+        job.save()
         output_path = os.path.join(app.config['OUTPUT_PATH'], run_id)
         temp_animation_path = os.path.join(app.config['OUTPUT_PATH'], "temp_images_" + run_id)
 
@@ -34,9 +39,11 @@ def run(run_id):
         shutil.rmtree(temp_animation_path, ignore_errors=True)
         os.makedirs(temp_animation_path)
 
-        queue = multiprocessing.Queue(-1)
-
+        
+        job.meta["message"] = "Setting up log file"
+        job.save()
         # Set up Logger
+        queue = multiprocessing.Queue(-1)
         logger = multiprocessing.get_logger()
         # Close any existing handlers
         (hand.close() for hand in logger.handlers)
@@ -50,6 +57,9 @@ def run(run_id):
         logger.addHandler(handler)
 
         try:
+
+            job.meta["message"] = "Configuring model"
+            job.save()
 
             run = db.Run.find_one( { '_id' : ObjectId(run_id) } )
             if run is None:
@@ -83,6 +93,9 @@ def run(run_id):
             cache_file = os.path.join(app.config['CACHE_PATH'], "hydro_" + run_id + ".cache")
             bathy_file = app.config['BATHY_PATH']
             
+
+            job.meta["message"] = "Running model"
+            job.save()
             model.run(run['hydro_path'], output_path=output_path, bathy=bathy_file, output_formats=output_formats, cache=cache_file, remove_cache=False)
 
             # Move cache file to output directory so it gets uploaded to S3
@@ -114,11 +127,14 @@ def run(run_id):
                     else:
                         logger.info("Animation saved")
             """
-            
+            job.meta["outcome"] = "success"
+            job.save()
             return "Successfully ran %s" % run_id
             
         except Exception:
             logger.warn("Run FAILED, cleaning up and uploading log.")
+            job.meta["outcome"] = "failed"
+            job.save()
             raise
 
         finally:
@@ -134,7 +150,9 @@ def run(run_id):
             # Close the handler so we can upload the log file without a file lock
             (hand.close() for hand in logger.handlers)
             queue.put(StopIteration)
-            
+
+            job.meta["message"] = "Uploading results to S3"
+            job.save()
             for filename in os.listdir(output_path):
                 outfile = os.path.join(output_path,filename)
                 k = Key(bucket)
@@ -152,6 +170,8 @@ def run(run_id):
             run.compute()
             run.save()
 
+            job.meta["message"] = "Cleaning up"
+            job.save()
             # Cleanup
             logger.removeHandler(handler)
             del formatter
@@ -159,3 +179,7 @@ def run(run_id):
             del logger
             del model
             queue.close()
+
+            job.meta["progress"] = 100
+            job.meta["message"] = "Complete"
+            job.save()

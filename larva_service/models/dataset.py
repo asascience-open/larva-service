@@ -1,13 +1,13 @@
 import json
 import os
 from flask.ext.mongokit import Document
-from larva_service import db, app
+from larva_service import db, app, redis_connection
 from datetime import datetime
 from shapely.geometry import Point
 from shapely.wkt import loads
 from paegan.cdm.dataset import CommonDataset
 from shapely.geometry import box
-from celery.result import AsyncResult
+from rq.job import Job
 
 class Dataset(Document):
     __collection__ = 'datasets'
@@ -30,15 +30,14 @@ class Dataset(Document):
     default_values = {
                       'created': datetime.utcnow
                       }
-
-    def asynctask(self):
-        return AsyncResult(self.task_id)
-
-    def result(self):
-        return self.asynctask().info
-
+                      
     def status(self):
-        return self.asynctask().state
+        if Job.exists(self.task_id, connection=redis_connection):
+            job = Job.fetch(self.task_id, connection=redis_connection)
+            job.refresh()
+            return job.status
+        else:
+            return "unknown"
 
     def calc(self):
         """

@@ -1,9 +1,9 @@
 from flask import render_template, redirect, url_for, request, flash, jsonify
-from larva_service import app, db
+from larva_service import app, db, dataset_queue
 import json
 from larva_service.models import remove_mongo_keys
 from larva_service.tasks.dataset import calc
-from celery.task.control import revoke
+from rq import cancel_job
 
 @app.route('/dataset', methods=['POST'])
 def add_dataset():
@@ -12,8 +12,8 @@ def add_dataset():
     dataset.location = request.form.get("location")
     dataset.save()
 
-    results = calc.delay(unicode(dataset['_id']))
-    dataset.task_id = unicode(results.task_id)
+    job = dataset_queue.enqueue_call(func=calc, args=(unicode(dataset['_id']),))
+    dataset.task_id = unicode(job.id)
     dataset.save()
 
     flash("Dataset created", 'success')
@@ -69,7 +69,7 @@ def delete_dataset(dataset_id, format=None):
         format = 'html'
 
     dataset = db.Dataset.find_one( { '_id' : dataset_id } )
-    revoke(dataset.task_id, terminate=True)
+    cancel_job(dataset.task_id)
     dataset.delete()
 
     if format == 'json':
@@ -101,8 +101,10 @@ def schedule_dataset(dataset_id, format=None):
         format = 'html'
 
     dataset = db.Dataset.find_one( { '_id' : dataset_id } )
-    results = calc.delay(dataset['_id'])
-    dataset.task_id = unicode(results.task_id)
+
+    # Enqueue
+    job = dataset_queue.enqueue_call(func=calc, args=(unicode(dataset['_id']),))
+    dataset.task_id = unicode(job.id)
     dataset.save()
 
     if format == 'json':

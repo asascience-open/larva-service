@@ -1,9 +1,9 @@
-from larva_service import celery, app, db
+from larva_service import app, db, dataset_queue
 from bson.objectid import ObjectId
 from datetime import datetime, timedelta
 import json
+import time
 
-@celery.task()
 def calc(dataset_id):
     with app.app_context():
 
@@ -17,11 +17,13 @@ def calc(dataset_id):
         dataset.updated = datetime.utcnow()
         dataset.save()
 
-        # Do this again in 3 hours
-        hours = 3
-        seconds = hours * 60. * 60.
-        results = calc.apply_async([dataset_id], countdown=seconds, queue='datasets')
-        dataset.task_id = unicode(results.task_id)
+        # Poor man's scheduler, until rq supports scheduling
+        # Sleep for 5 minutes to prevent crashing the DAP servers
+        time.sleep(300)
+
+        # And then do it again
+        job = dataset_queue.enqueue_call(func=calc, args=(dataset_id,))
+        dataset.task_id = unicode(job.id)
         dataset.save()
 
-        return "Successfully updated dataset %s (%s)" % (dataset_id, dataset.name)
+        return "Scheduled %s (%s)" % (dataset_id, dataset.name)

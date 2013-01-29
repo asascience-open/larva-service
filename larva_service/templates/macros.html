@@ -1,10 +1,12 @@
 {%- macro status_bootstrap_class(st) -%}
-    {%- if st == "SUCCESS" %}
+    {%- if st == "finished" %}
         {{- 'success' -}}
-    {%- elif st == "PROGRESS" -%}
+    {%- elif st == "failed" -%}
         {{- 'warning' -}}
-    {%- elif st == "STARTED" -%}
+    {%- elif st == "started" -%}
         {{- 'info' -}}
+    {%- elif st == "success" -%}
+        {{- 'success' -}}
     {%- else -%}
         {{- 'important' -}}
     {%- endif -%}

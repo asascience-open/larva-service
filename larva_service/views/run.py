@@ -1,11 +1,11 @@
 from flask import render_template, redirect, url_for, request, flash, jsonify
-from larva_service import app, db
-from celery.task.control import revoke
+from larva_service import app, db, run_queue
 from larva_service.tasks.larva import run as larva_run
 import json
 import pytz
 from larva_service.models import remove_mongo_keys
 from pymongo import DESCENDING
+from rq import cancel_job
 
 @app.route('/run', methods=['GET', 'POST'])
 @app.route('/run.<string:format>', methods=['GET', 'POST'])
@@ -34,9 +34,9 @@ def run_larva_model(format=None):
     run.load_run_config(config_dict)
     run.save()
 
-    # Pass in the Run ID to the task
-    results = larva_run.delay(unicode(run['_id']))
-    run.task_id = unicode(results.task_id)
+    # Enqueue
+    job = run_queue.enqueue_call(func=larva_run, args=(unicode(run['_id']),))
+    run.task_id = unicode(job.id)
     run.save()
 
     message = "Run created"
@@ -53,10 +53,7 @@ def delete_run(run_id, format=None):
         format = 'html'
 
     run = db.Run.find_one( { '_id' : run_id } )
-
-    # Kill the Celery task
-    revoke(run.task_id, terminate=True)
-
+    cancel_job(run.task_id)
     run.delete()
 
     if format == 'json':

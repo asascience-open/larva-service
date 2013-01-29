@@ -1,16 +1,26 @@
+import urlparse
+
 DEBUG = True
 TESTING = True
 LOG_FILE = True
 
 # Database
-MONGODB_HOST = 'localhost'
-MONGODB_PORT = 27017
-MONGODB_DATABASE = 'larvaservice_testing'
-MONGODB_USERNAME = 'larvamap'
-MONGODB_PASSWORD = 'yourpassword'
+MONGO_URI = "mongodb://larvamap:yourpassword@localhost:27017/larvaservice_testing"
+url = urlparse.urlparse(MONGO_URI)
+MONGODB_HOST = url.hostname
+MONGODB_PORT = url.port
+MONGODB_USERNAME = url.username
+MONGODB_PASSWORD = url.password
+MONGODB_DATABASE = url.path[1:]
 
-# Celery
-BROKER_URL = 'redis://localhost:6379/1'
+# Redis
+REDIS_URI = "redis://localhost:6379/1"
+url = urlparse.urlparse(REDIS_URI)
+REDIS_HOST = url.hostname
+REDIS_PORT = url.port
+REDIS_USERNAME = url.username
+REDIS_PASSWORD = url.password
+REDIS_DATABASE = url.path[1:]
 
 S3_BUCKET = "larvamap-testing"
 

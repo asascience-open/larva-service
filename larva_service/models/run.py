@@ -1,7 +1,6 @@
 from mongokit import Document, DocumentMigration
-from larva_service import db, app
+from larva_service import db, app, redis_connection
 from datetime import datetime
-from celery.result import AsyncResult
 import json
 import urllib2
 import pytz
@@ -12,6 +11,7 @@ import mimetypes
 from shapely.geometry import Point, Polygon, asShape
 import geojson
 from shapely.wkt import loads
+from rq.job import Job
 
 class RunMigration(DocumentMigration):
     def allmigration01__add_results_field(self):
@@ -60,11 +60,12 @@ class Run(Document):
         except:
             app.logger.warning("Could no compute (cache) model run results locally")
 
-        if self.trackline is not None and len(self.output) > 1:
-            self.task_result = u"SUCCESS"
-        else:
-            self.task_result = u"FAILURE"
+        if Job.exists(self.task_id, connection=redis_connection):
+            job = Job.fetch(self.task_id, connection=redis_connection)
+            job.refresh()
+            self.task_result = unicode(job.meta.get("outcome", ""))
 
+        self.save()
 
     def set_trackline(self):
         if self.trackline is None:
@@ -75,20 +76,35 @@ class Run(Document):
                     self.trackline = unicode(asShape(geojson.loads(t.read())).wkt)
         return self.trackline
 
-    def asynctask(self):
-        return AsyncResult(self.task_id)
-
-    def result(self):
-        if self.task_result and self.task_result != "":
-            return self.task_result
-        else:
-            return self.asynctask().result
-
     def status(self):
-        if self.task_result and self.task_result != "":
+        if self.task_result is not None and self.task_result != "":
             return self.task_result
+        elif Job.exists(self.task_id, connection=redis_connection):
+            job = Job.fetch(self.task_id, connection=redis_connection)
+            job.refresh()
+            return job.status
         else:
-            return self.asynctask().state
+            return "unknown"
+
+    def progress(self):
+        if self.task_result is not None and self.task_result != "":
+            return 100
+        elif Job.exists(self.task_id, connection=redis_connection):
+            job = Job.fetch(self.task_id, connection=redis_connection)
+            job.refresh()
+            return job.meta.get("progress", -1)
+        else:
+            return "unknown"
+
+    def message(self):
+        if self.task_result is not None and self.task_result != "":
+            return self.task_result
+        elif Job.exists(self.task_id, connection=redis_connection):
+            job = Job.fetch(self.task_id, connection=redis_connection)
+            job.refresh()
+            return job.meta.get("message", None)
+        else:
+            return "unknown"
 
     def google_maps_trackline(self):
         if self.trackline:

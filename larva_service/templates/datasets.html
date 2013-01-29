@@ -23,6 +23,7 @@
                 <th>status</th>
                 <th>name</th>
                 <th>location</th>
+                <th>last updated</th>
                 <th>time interval</th>
                 <th>actions</th>
             </tr>
@@ -33,6 +34,7 @@
                 <td><span class="label label-{{ status_bootstrap_class(dataset.status()) }}">{{dataset.status()}}</span></td>
                 <td>{{ dataset.name }}</td>
                 <td>{{ dataset.location }}</td>
+                <td>{{ dataset.updated }}</td>
                 <td>{{ dataset.starting }} - {{ dataset.ending }}</td>
                 <td>
                     <a href="{{ url_for('show_dataset', dataset_id=dataset._id) }}">View</a>

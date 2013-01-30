@@ -1,4 +1,5 @@
 from larva_service import app, db
+from flask import current_app
 from time import sleep
 from shapely.wkt import dumps, loads
 import json
@@ -25,13 +26,15 @@ def run(run_id):
 
     with app.app_context():
 
+        current_app.logger.info("GOT JOB: %s" % run_id)
+
         job = get_current_job()
 
         job.meta["progress"] = 0
         job.meta["message"] = "Setting up output directories"
         job.save()
-        output_path = os.path.join(app.config['OUTPUT_PATH'], run_id)
-        temp_animation_path = os.path.join(app.config['OUTPUT_PATH'], "temp_images_" + run_id)
+        output_path = os.path.join(current_app.config['OUTPUT_PATH'], run_id)
+        temp_animation_path = os.path.join(current_app.config['OUTPUT_PATH'], "temp_images_" + run_id)
 
         shutil.rmtree(output_path, ignore_errors=True)
         os.makedirs(output_path)
@@ -83,15 +86,15 @@ def run(run_id):
                 models.append(l)
             models.append(Transport(horizDisp=run['horiz_dispersion'], vertDisp=run['vert_dispersion']))
 
-            shoreline_path = app.config.get("SHORE_PATH", None)
+            shoreline_path = current_app.config.get("SHORE_PATH", None)
 
             # Setup ModelController
             model = ModelController(geometry=geometry, depth=start_depth, start=start_time, step=time_step, nstep=num_steps, npart=num_particles, models=models, use_bathymetry=True, use_shoreline=True,
                 time_chunk=run['time_chunk'], horiz_chunk=run['horiz_chunk'], time_method=run['time_method'], shoreline_path=shoreline_path)
 
             # Run the model
-            cache_file = os.path.join(app.config['CACHE_PATH'], "hydro_" + run_id + ".cache")
-            bathy_file = app.config['BATHY_PATH']
+            cache_file = os.path.join(current_app.config['CACHE_PATH'], "hydro_" + run_id + ".cache")
+            bathy_file = current_app.config['BATHY_PATH']
             
 
             job.meta["message"] = "Running model"
@@ -141,10 +144,10 @@ def run(run_id):
 
             # Handle results and cleanup
             result_files = []
-            base_s3_url = "http://%s.s3.amazonaws.com/output/%s" % (app.config['S3_BUCKET'], run_id)
+            base_s3_url = "http://%s.s3.amazonaws.com/output/%s" % (current_app.config['S3_BUCKET'], run_id)
             # Upload results to S3 and remove the local copies
             conn = S3Connection()
-            bucket = conn.get_bucket(app.config['S3_BUCKET'])
+            bucket = conn.get_bucket(current_app.config['S3_BUCKET'])
             logger.info("Uploading files to to S3...")
 
             # Close the handler so we can upload the log file without a file lock

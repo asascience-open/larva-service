@@ -33,10 +33,6 @@ if app.config.get('LOG_FILE') == True:
     file_handler.setLevel(logging.INFO)
     app.logger.addHandler(file_handler)
 
-# Create the database connection
-db = MongoKit(app)
-
-
 # Create the Redis connection
 import redis
 from rq import Queue
@@ -44,6 +40,8 @@ redis_connection = redis.from_url(app.config.get("REDIS_URI"))
 run_queue = Queue('runs', connection=redis_connection, default_timeout=604800) # 1 week timeout
 dataset_queue = Queue('datasets', connection=redis_connection, default_timeout=600) # 10 min timeout
 
+# Create the database connection
+db = MongoKit(app)
 
 # Import everything
 import larva_service.views

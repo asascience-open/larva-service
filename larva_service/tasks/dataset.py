@@ -1,10 +1,10 @@
-from larva_service import app, db, dataset_queue
 from bson.objectid import ObjectId
-from datetime import datetime, timedelta
-import json
+from datetime import datetime
 import time
+from larva_service import app, db, dataset_queue
 
 def calc(dataset_id):
+
     with app.app_context():
 
         # Save results back to Run
@@ -15,7 +15,6 @@ def calc(dataset_id):
 
         dataset.calc()
         dataset.updated = datetime.utcnow()
-        dataset.save()
 
         # Poor man's scheduler, until rq supports scheduling
         # Sleep for 5 minutes to prevent crashing the DAP servers

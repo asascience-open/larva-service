@@ -20,7 +20,7 @@ REDIS_HOST = url.hostname
 REDIS_PORT = url.port
 REDIS_USERNAME = url.username
 REDIS_PASSWORD = url.password
-REDIS_DATABASE = url.path[1:]
+REDIS_DB = url.path[1:]
 
 S3_BUCKET = "larvamap-testing"
 

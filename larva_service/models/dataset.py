@@ -1,7 +1,7 @@
 import json
 import os
 from flask.ext.mongokit import Document
-from larva_service import db, app, redis_connection
+from larva_service import app, db, redis_connection
 from datetime import datetime
 from shapely.geometry import Point
 from shapely.wkt import loads

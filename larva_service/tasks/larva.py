@@ -76,7 +76,7 @@ def run(run_id):
             start_time = run['start'].replace(tzinfo=pytz.utc)
 
             # Set up output directory/bucket for run
-            output_formats = ['Shapefile','NetCDF','Trackline']
+            output_formats = ['Shapefile','NetCDF','Trackline','Pickle']
 
             # Setup Models
             models = []

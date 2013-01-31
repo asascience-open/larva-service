@@ -62,7 +62,6 @@ class Run(Document):
 
         if Job.exists(self.task_id, connection=redis_connection):
             job = Job.fetch(self.task_id, connection=redis_connection)
-            job.refresh()
             self.task_result = unicode(job.meta.get("outcome", ""))
 
         self.save()
@@ -81,7 +80,6 @@ class Run(Document):
             return self.task_result
         elif Job.exists(self.task_id, connection=redis_connection):
             job = Job.fetch(self.task_id, connection=redis_connection)
-            job.refresh()
             return job.status
         else:
             return "unknown"
@@ -91,7 +89,6 @@ class Run(Document):
             return 100
         elif Job.exists(self.task_id, connection=redis_connection):
             job = Job.fetch(self.task_id, connection=redis_connection)
-            job.refresh()
             return job.meta.get("progress", -1)
         else:
             return "unknown"
@@ -101,7 +98,6 @@ class Run(Document):
             return self.task_result
         elif Job.exists(self.task_id, connection=redis_connection):
             job = Job.fetch(self.task_id, connection=redis_connection)
-            job.refresh()
             return job.meta.get("message", None)
         else:
             return "unknown"

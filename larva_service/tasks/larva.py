@@ -26,8 +26,6 @@ def run(run_id):
 
     with app.app_context():
 
-        current_app.logger.info("GOT JOB: %s" % run_id)
-
         job = get_current_job()
 
         job.meta["progress"] = 0

@@ -24,7 +24,7 @@ REDIS_DB = url.path[1:]
 
 S3_BUCKET = "larvamap-testing"
 
-BATHY_PATH = "/home/dev/Development/paegan/paegan/resources/bathymetry/ETOPO1_Bed_g_gmt4.grd"
-CACHE_PATH = "/home/dev/Development/larva-service/cache"
-OUTPUT_PATH = "/home/dev/Development/larva-service/output"
+BATHY_PATH = "/data/lm/bathy/ETOPO1_Bed_g_gmt4.grd"
+CACHE_PATH = "/data/lm/cache"
+OUTPUT_PATH = "/data/lm/output"
 SHORE_PATH = "/home/dev/Development/paegan/paegan/resources/shoreline/global/10m_land.shp"

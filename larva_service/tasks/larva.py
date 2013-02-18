@@ -22,7 +22,12 @@ from bson.objectid import ObjectId
 
 from rq import get_current_job
 
+import time
+
 def run(run_id):
+
+    # Sleep to give the Run object enough time to save
+    time.sleep(10)
 
     with app.app_context():
 

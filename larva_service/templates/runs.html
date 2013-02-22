@@ -28,6 +28,7 @@
                 <th>created</th>
                 <th>progress</th>
                 <th>message</th>
+                <th>last update</th>
                 <th>actions</th>
             </tr>
         </thead>
@@ -37,8 +38,9 @@
                 <td><span class="label label-{{ status_bootstrap_class(run.status()) }}">{{run.status()}}</span></td>
                 <td>{{ run._id }}</td>
                 <td>{{ run.created }}</td>
-                <td>{{ run.progress() }}</td>
+                <td>{{ run.progress() }}%</td>
                 <td>{{ run.message() }}</td>
+                <td>{{ run.last_progress_update() }}</td>
                 <td>
                     <a href="{{ url_for('show_run', run_id=run._id) }}">View</a>
                     <a href="{{ url_for('delete_run', run_id=run._id) }}">Delete</a>

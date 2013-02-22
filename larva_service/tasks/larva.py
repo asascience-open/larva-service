@@ -8,12 +8,23 @@ import math
 import os
 import shutil
 import multiprocessing, logging
+PROGRESS=15
+logging.PROGRESS = PROGRESS
+logging.addLevelName(PROGRESS, 'PROGRESS')
+def progress(self, message, *args, **kws):
+    if self.isEnabledFor(PROGRESS):
+        self._log(PROGRESS, message, args, **kws)
+logging.Logger.progress = progress
+
+import threading
+import collections
 
 from paegan.transport.models.behavior import LarvaBehavior
 from paegan.transport.models.transport import Transport
 from paegan.transport.model_controller import ModelController
 
-from paegan.logging.multi_process_logging import MultiProcessingLogHandler
+from paegan.logger.multi_process_logging import MultiProcessingLogHandler
+from paegan.logger.progress_handler import ProgressHandler
 
 from boto.s3.connection import S3Connection
 from boto.s3.key import Key
@@ -30,12 +41,10 @@ def run(run_id):
     time.sleep(10)
 
     with app.app_context():
+        from paegan.logger import logger
 
         job = get_current_job()
 
-        job.meta["progress"] = 0
-        job.meta["message"] = "Setting up output directories"
-        job.save()
         output_path = os.path.join(current_app.config['OUTPUT_PATH'], run_id)
         temp_animation_path = os.path.join(current_app.config['OUTPUT_PATH'], "temp_images_" + run_id)
 
@@ -45,27 +54,55 @@ def run(run_id):
         shutil.rmtree(temp_animation_path, ignore_errors=True)
         os.makedirs(temp_animation_path)
 
-        
-        job.meta["message"] = "Setting up log file"
-        job.save()
         # Set up Logger
         queue = multiprocessing.Queue(-1)
-        logger = multiprocessing.get_logger()
+        
         # Close any existing handlers
         (hand.close() for hand in logger.handlers)
         # Remove any existing handlers
         logger.handlers = []
-        logger.setLevel(logging.INFO)
+        logger.setLevel(logging.PROGRESS)
         handler = MultiProcessingLogHandler(os.path.join(output_path, '%s.log' % run_id), queue)
-        handler.setLevel(logging.INFO)
+        handler.setLevel(logging.PROGRESS)
         formatter = logging.Formatter('[%(asctime)s] - %(levelname)s - %(name)s - %(processName)s - %(message)s')
         handler.setFormatter(formatter)
         logger.addHandler(handler)
 
+        # Progress stuff.  Hokey!
+        progress_deque = collections.deque(maxlen=1)
+        progress_handler = ProgressHandler(progress_deque)
+        progress_handler.setLevel(logging.PROGRESS)
+        logger.addHandler(progress_handler)
+
+        e = threading.Event()
+
+        def save_progress():
+            while e.wait(5) != True:
+                try:
+                    record = progress_deque.pop()
+                    if record == StopIteration:
+                        break
+
+                    job.meta["updated"] = record[0]
+                    if record is not None and record[1] >= 0:
+                        job.meta["progress"] = record[1]
+                    if isinstance(record[2],unicode) or isinstance(record[2], str):
+                        job.meta["message"] = record[2]
+
+                    job.save()
+                except IndexError:
+                    pass
+                except Exception:
+                    raise
+            return
+
+        t = threading.Thread(name="ProgressUpdater", target=save_progress)
+        t.daemon = True
+        t.start()
+
         try:
 
-            job.meta["message"] = "Configuring model"
-            job.save()
+            logger.progress((0, "Configuring model"))
 
             run = db.Run.find_one( { '_id' : ObjectId(run_id) } )
             if run is None:
@@ -99,9 +136,6 @@ def run(run_id):
             cache_file = os.path.join(current_app.config['CACHE_PATH'], "hydro_" + run_id + ".cache")
             bathy_file = current_app.config['BATHY_PATH']
             
-
-            job.meta["message"] = "Running model"
-            job.save()
             model.run(run['hydro_path'], output_path=output_path, bathy=bathy_file, output_formats=output_formats, cache=cache_file, remove_cache=False)
 
             # Move cache file to output directory so it gets uploaded to S3
@@ -151,14 +185,14 @@ def run(run_id):
             # Upload results to S3 and remove the local copies
             conn = S3Connection()
             bucket = conn.get_bucket(current_app.config['S3_BUCKET'])
-            logger.info("Uploading files to to S3...")
+            logger.progress((99, "Uploading files to S3"))
 
             # Close the handler so we can upload the log file without a file lock
             (hand.close() for hand in logger.handlers)
             queue.put(StopIteration)
+            # Break out of the progress loop
+            e.set()
 
-            job.meta["message"] = "Uploading results to S3"
-            job.save()
             for filename in os.listdir(output_path):
                 outfile = os.path.join(output_path,filename)
                 k = Key(bucket)
@@ -176,8 +210,6 @@ def run(run_id):
             run.compute()
             run.save()
 
-            job.meta["message"] = "Cleaning up"
-            job.save()
             # Cleanup
             logger.removeHandler(handler)
             del formatter
@@ -186,6 +218,5 @@ def run(run_id):
             del model
             queue.close()
 
-            job.meta["progress"] = 100
             job.meta["message"] = "Complete"
             job.save()

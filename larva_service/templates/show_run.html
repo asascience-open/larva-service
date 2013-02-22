@@ -65,13 +65,15 @@
                 <th>created</th>
                 <th>progress</th>
                 <th>message</th>
+                <th>last update</th>
             </tr>
         </thead>
         <tbody>
             <tr>
                 <td>{{ run.created }}</td>
-                <td>{{ run.progress() }}</td>
+                <td>{{ run.progress() }}%</td>
                 <td>{{ run.message() }}</td>
+                <td>{{ run.last_progress_update() }}</td>
             </tr>
          </tbody>
     </table>

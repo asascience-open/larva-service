@@ -50,6 +50,7 @@ class Run(Document):
                       }
     migration_handler = RunMigration
 
+    restrict_loading = ["output", "task_result", "trackline", "task_id", "created", "cached_behavior"]
 
     def compute(self):
         """
@@ -153,7 +154,7 @@ class Run(Document):
 
     def run_config(self):
 
-        skip_keys = ['_id','cached_behavior','created','task_id','output','trackline']
+        skip_keys = ['_id','cached_behavior','created','task_id','output','trackline','task_result']
         d = {}
         for key,value in self.iteritems():
             try:

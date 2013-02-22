@@ -1,5 +1,6 @@
 from flask import render_template, redirect, url_for, request, flash, jsonify
 from larva_service import app, db, run_queue
+from larva_service.models.run import Run
 from larva_service.tasks.larva import run as larva_run
 import json
 import pytz
@@ -22,6 +23,11 @@ def run_larva_model(format=None):
     config_dict = None
     try:
         config_dict = json.loads(run_details.strip())
+        # Remove keys that shouldn't be saved when loading JSON
+        for key in Run.restrict_loading:
+            if key in config_dict:
+                del config_dict[key]
+
     except:
         message = "Could not decode parameters"
         if format == 'html':
@@ -81,7 +87,7 @@ def runs(format=None):
         jsond = []
         for run in runs:
             js = json.loads(run.to_json())
-            remove_mongo_keys(js, extra=['output', 'cached_behavior'])
+            remove_mongo_keys(js, extra=['output', 'cached_behavior', 'task_result', 'task_id'])
             js['_id'] = unicode(run._id)
             js['status'] = unicode(run.status())
             js['output'] = list(run.output_files())
@@ -108,7 +114,7 @@ def show_run(run_id, format=None):
         return render_template('show_run.html', run=run, run_config=run_config, cached_behavior=cached_behavior, line=linestring, markers=markers)
     elif format == 'json':
         jsond = json.loads(run.to_json())
-        remove_mongo_keys(jsond, extra=['output'])
+        remove_mongo_keys(jsond, extra=['output','task_result','task_id'])
         jsond['_id'] = unicode(run._id)
         jsond['status'] = unicode(run.status())
         jsond['output'] = list(run.output_files())

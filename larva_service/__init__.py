@@ -3,6 +3,8 @@ import os
 from flask import Flask
 from flask.ext.mongokit import MongoKit
 
+import datetime
+
 # Create application object
 app = Flask(__name__)
 
@@ -42,6 +44,20 @@ dataset_queue = Queue('datasets', connection=redis_connection, default_timeout=6
 
 # Create the database connection
 db = MongoKit(app)
+
+# Create datetime jinja2 filter
+def datetimeformat(value, format='%a, %b %d %Y at %I:%M%p'):
+    if isinstance(value, datetime.datetime):
+        return value.strftime(format)
+    return value
+
+def timedeltaformat(starting, ending):
+    if isinstance(starting, datetime.datetime) and isinstance(ending, datetime.datetime):
+        return ending - starting
+    return "unknown"
+
+app.jinja_env.filters['datetimeformat'] = datetimeformat
+app.jinja_env.filters['timedeltaformat'] = timedeltaformat
 
 # Import everything
 import larva_service.views

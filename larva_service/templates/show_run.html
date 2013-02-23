@@ -52,7 +52,8 @@
 
 {% block page %}
 
-    <h1>{{ run._id }}</h1>
+    <h1>{{ run.name }}</h1>
+    <h2>{{ run._id }}</h2>
     <span class="label label-{{ status_bootstrap_class(run.status()) }}">{{run.status()}}</span>
     
     <hr />
@@ -62,18 +63,20 @@
     <table class="table table-striped table-bordered table-condensed">
         <thead>
             <tr>
-                <th>created</th>
+                <th>created (utc)</th>
                 <th>progress</th>
                 <th>message</th>
-                <th>last update</th>
+                <th>last update (utc)</th>
+                <th>time to finish</th>
             </tr>
         </thead>
         <tbody>
             <tr>
-                <td>{{ run.created }}</td>
+                <td>{{ run.created | datetimeformat }}</td>
                 <td>{{ run.progress() }}%</td>
                 <td>{{ run.message() }}</td>
-                <td>{{ run.last_progress_update() }}</td>
+                <td>{{ run.last_progress_update() | datetimeformat }}</td>
+                <td>{{ run.created | timedeltaformat(run.ended) }}</td>
             </tr>
          </tbody>
     </table>
@@ -81,7 +84,7 @@
     <div class="row">
         <dl class="dl-horizontal span8">
             {% for key, value in run|dictsort %}
-                {% if key != 'cached_behavior' and key != 'output' and key != 'trackline' %}
+                {% if key != 'cached_behavior' and key != 'output' and key != 'trackline' and key != 'task_result' and key != '_id' and key != 'task_id' and key != 'ended' %}
                     <dt>{{ key }} </dt>
                     <dd>{{ value }}</dd>
                 {% endif %}
@@ -104,11 +107,6 @@
     <h2>run_config</h2>
     <pre>
 {{ run_config|safe }}
-    </pre>
-
-    <h2>result</h2>
-    <pre>
-{{ run.progress() }} - {{ run.message() }}
     </pre>
 
     <h2>cached_behavior</h2>

@@ -23,10 +23,6 @@ def run_larva_model(format=None):
     config_dict = None
     try:
         config_dict = json.loads(run_details.strip())
-        # Remove keys that shouldn't be saved when loading JSON
-        for key in Run.restrict_loading:
-            if key in config_dict:
-                del config_dict[key]
 
     except:
         message = "Could not decode parameters"

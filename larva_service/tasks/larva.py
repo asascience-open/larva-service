@@ -8,6 +8,7 @@ import math
 import os
 import shutil
 import multiprocessing, logging
+from datetime import datetime
 PROGRESS=15
 logging.PROGRESS = PROGRESS
 logging.addLevelName(PROGRESS, 'PROGRESS')
@@ -207,6 +208,7 @@ def run(run_id):
 
             # Set output fields
             run.output = result_files
+            run.ended = datetime.utcnow()
             run.compute()
             run.save()
 

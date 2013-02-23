@@ -18,10 +18,19 @@ class RunMigration(DocumentMigration):
         self.target = {'task_result':{'$exists': False}}
         self.update = {'$set':{'task_result':""}}
 
+    def allmigration02__add_name_field(self):
+        self.target = {'name':{'$exists': False}}
+        self.update = {'$set':{'name':""}}
+
+    def allmigration03__add_duration_field(self):
+        self.target = {'ended':{'$exists': False}}
+        self.update = {'$set':{'ended':""}}
+
 class Run(Document):
     __collection__ = 'runs'
     use_dot_notation = True
     structure = {
+       'name'               : unicode,
        'behavior'           : unicode,  # URL to Behavior JSON
        'cached_behavior'    : dict,     # Save the contents of behavior URL
        'particles'          : int,      # Number of particles to force
@@ -41,7 +50,8 @@ class Run(Document):
        'email'              : unicode,   # Email of the person who ran the model
        'output'             : list,
        'task_result'        : unicode,
-       'trackline'          : unicode
+       'trackline'          : unicode,
+       'ended'              : datetime
     }
     default_values = {
                       'created': datetime.utcnow,
@@ -50,7 +60,7 @@ class Run(Document):
                       }
     migration_handler = RunMigration
 
-    restrict_loading = ["output", "task_result", "trackline", "task_id", "created", "cached_behavior"]
+    restrict_loading = ["output", "task_result", "trackline", "task_id", "created", "cached_behavior","output", "ended"]
 
     def compute(self):
         """
@@ -163,7 +173,7 @@ class Run(Document):
 
     def run_config(self):
 
-        skip_keys = ['_id','cached_behavior','created','task_id','output','trackline','task_result']
+        skip_keys = ['_id','cached_behavior','created','task_id','output','trackline','task_result', 'ended']
         d = {}
         for key,value in self.iteritems():
             try:
@@ -187,6 +197,10 @@ class Run(Document):
                 
             if key == 'release_depth' or key == 'horiz_dispersion' or key == 'vert_dispersion':
                 self[key] = float(value)
+                continue
+
+            # Don't save keys that shouldn't be part of an initial run object
+            if key in Run.restrict_loading:
                 continue
 
             self[key] = value

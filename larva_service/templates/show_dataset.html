@@ -48,7 +48,7 @@
     <div class="row">
         <dl class="dl-horizontal span8">
             {% for key, value in dataset|dictsort %}
-                {% if key != 'variables' %}
+                {% if key != 'variables' and key != 'task_id' %}
                     <dt>{{ key }} </dt>
                     <dd>{{ value }}</dd>
                 {% endif %}

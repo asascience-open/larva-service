@@ -4,10 +4,10 @@ Flask-MongoKit==0.6
 Flask-WTF==0.8.2
 gunicorn==0.16.1
 mongokit==0.8.2
-redis
-rq
-rq-dashboard
-pytz==2012h
+redis==2.7.2
+rq==0.3.7
+rq-dashboard==0.3.1
+pytz==2012j
 numpy==1.6.2
 git+http://github.com/matplotlib/basemap.git@v1.0.5rel#egg=basemap
 git+https://github.com/asascience-open/paegan.git@master#egg=paegan

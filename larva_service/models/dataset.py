@@ -17,7 +17,7 @@ class Dataset(Document):
         'starting'          : datetime, # URL to Behavior JSON
         'ending'            : datetime, # Save the contents of behavior URL
         'timestep'          : int,      # Model timestep, in seconds
-        'location'          : unicode,  # Number of particles to force
+        'location'          : unicode,  # DAP endpoint
         'bbox'              : unicode,  # WKT of the bounding box
         'geometry'          : unicode,  # WKT of the bounding polygon
         'variables'         : dict,     # dict of variables, including attributes

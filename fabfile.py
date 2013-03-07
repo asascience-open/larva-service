@@ -7,8 +7,9 @@ code_dir = "/home/larva/larva-service"
 
 env.roledefs.update({
     'web': [],
-    'app': ['ec2-54-235-233-195.compute-1.amazonaws.com','ec2-54-234-77-78.compute-1.amazonaws.com','ec2-107-20-59-188.compute-1.amazonaws.com','ec2-50-17-60-230.compute-1.amazonaws.com'],
-    'both' : ['174.129.241.244']
+    'datasets': [],
+    'runs': ["ec2-50-16-124-101.compute-1.amazonaws.com"],
+    'all' : ['174.129.241.244']
 })
 
 def admin():
@@ -16,33 +17,60 @@ def admin():
 def larva():
     env.user = "larva"
 
+@roles('runs')
+def deploy_runs(paegan=None):
+    stop_supervisord()
+    kill_pythons()
+    update_libs()
 
-@roles('app')
-def deploy_apps():
     larva()
     with cd(code_dir):
-        run("supervisorctl -c ~/supervisord.conf stop all")
         run("git pull origin master")
-        update_paegan()
-        run("supervisorctl -c ~/supervisord.conf start datasets")
+        if paegan:
+            update_paegan()
+        start_supervisord()
         run("supervisorctl -c ~/supervisord.conf start runs")
 
-@roles('web')
-def deploy_web():
+@roles('datasets')
+def deploy_datasets(paegan=None):
+    stop_supervisord()
+    kill_pythons()
+    update_libs()
+
     larva()
     with cd(code_dir):
-        run("supervisorctl -c ~/supervisord.conf stop all")
         run("git pull origin master")
-        update_paegan()
+        if paegan:
+            update_paegan()
+        start_supervisord()
+        run("supervisorctl -c ~/supervisord.conf start datasets")
+
+@roles('web')
+def deploy_web(paegan=None):
+    stop_supervisord()
+    kill_pythons()
+    update_libs()
+
+    larva()
+    with cd(code_dir):
+        run("git pull origin master")
+        if paegan:
+            update_paegan()
+        start_supervisord()
         run("supervisorctl -c ~/supervisord.conf start gunicorn")
 
-@roles('both')
-def deploy_both():
+@roles('all')
+def deploy_all(paegan=None):
+    stop_supervisord()
+    kill_pythons()
+    update_libs()
+
     larva()
     with cd(code_dir):
-        run("supervisorctl -c ~/supervisord.conf stop all")
         run("git pull origin master")
-        update_paegan()
+        if paegan:
+            update_paegan()
+        start_supervisord()
         run("supervisorctl -c ~/supervisord.conf start all")
 
 def update_paegan():
@@ -55,21 +83,42 @@ def update_paegan():
         run("pip install --upgrade --no-deps git+https://github.com/asascience-open/paegan.git@master#egg=paegan")
         run("pip install --upgrade --no-deps git+https://github.com/asascience-open/paegan-viz.git@master#egg=paegan-viz")
 
-@roles('web', 'both')
+@roles('runs','datasets','all')
+def kill_pythons():
+    admin()
+    with settings(warn_only=True):
+        run("sudo kill -QUIT $(ps aux | grep python | grep -v supervisord | awk '{print $2}')")
+
+def update_libs():
+    larva()
+    with cd(code_dir):
+        with settings(warn_only=True):
+            run("pip install -r requirements.txt")
+
+@roles('web', 'all')
 def restart_nginx():
     admin()
     run("sudo /etc/init.d/nginx restart")
 
-@roles('app','web','both')
+@roles('runs','datasets','web','all')
 def supervisord_restart():
+    stop_supervisord()
+    start_supervisord()
+
+def stop_supervisord():
     larva()
     with cd(code_dir):
         with settings(warn_only=True):
-            run("kill -QUIT $(ps aux | grep supervisord | awk '{print $2}')")
-            run("supervisord -c ~/supervisord.conf")
             run("supervisorctl -c ~/supervisord.conf stop all")
+            run("kill -QUIT $(ps aux | grep supervisord | grep -v grep | awk '{print $2}')")
 
-@roles('web','app','both')
+def start_supervisord():
+    larva()
+    with cd(code_dir):
+        with settings(warn_only=True):    
+            run("supervisord -c ~/supervisord.conf")
+
+@roles('runs','datasets','web','all')
 def upload_key_to_larva():
     admin()
     with settings(warn_only=True):
@@ -78,7 +127,7 @@ def upload_key_to_larva():
         run("sudo chmod 600 /home/larva/.ssh/authorized_keys")
         run("sudo chmod 700 /home/larva/.ssh")
 
-@roles('app','web', 'both')
+@roles('runs','datasets','web','all')
 def setup_filesystem():
     admin()
     with settings(warn_only=True):

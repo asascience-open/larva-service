@@ -21,13 +21,11 @@ def larva():
 def deploy_runs(paegan=None):
     stop_supervisord()
     kill_pythons()
-    update_libs()
 
     larva()
     with cd(code_dir):
         run("git pull origin master")
-        if paegan:
-            update_paegan()
+        update_libs(paegan)
         start_supervisord()
         run("supervisorctl -c ~/supervisord.conf start runs")
 
@@ -35,13 +33,11 @@ def deploy_runs(paegan=None):
 def deploy_datasets(paegan=None):
     stop_supervisord()
     kill_pythons()
-    update_libs()
 
     larva()
     with cd(code_dir):
         run("git pull origin master")
-        if paegan:
-            update_paegan()
+        update_libs(paegan)
         start_supervisord()
         run("supervisorctl -c ~/supervisord.conf start datasets")
 
@@ -49,13 +45,11 @@ def deploy_datasets(paegan=None):
 def deploy_web(paegan=None):
     stop_supervisord()
     kill_pythons()
-    update_libs()
 
     larva()
     with cd(code_dir):
         run("git pull origin master")
-        if paegan:
-            update_paegan()
+        update_libs(paegan)
         start_supervisord()
         run("supervisorctl -c ~/supervisord.conf start gunicorn")
 
@@ -63,13 +57,11 @@ def deploy_web(paegan=None):
 def deploy_all(paegan=None):
     stop_supervisord()
     kill_pythons()
-    update_libs()
 
     larva()
     with cd(code_dir):
         run("git pull origin master")
-        if paegan:
-            update_paegan()
+        update_libs(paegan)
         start_supervisord()
         run("supervisorctl -c ~/supervisord.conf start all")
 
@@ -89,11 +81,14 @@ def kill_pythons():
     with settings(warn_only=True):
         run("sudo kill -QUIT $(ps aux | grep python | grep -v supervisord | awk '{print $2}')")
 
-def update_libs():
+def update_libs(paegan=None):
     larva()
     with cd(code_dir):
         with settings(warn_only=True):
+            if paegan:
+                update_paegan()
             run("pip install -r requirements.txt")
+
 
 @roles('web', 'all')
 def restart_nginx():

@@ -172,8 +172,9 @@ def run(run_id):
             job.save()
             return "Successfully ran %s" % run_id
             
-        except Exception:
+        except Exception as e:
             logger.warn("Run FAILED, cleaning up and uploading log.")
+            logger.warn(e.message)
             job.meta["outcome"] = "failed"
             job.save()
             raise

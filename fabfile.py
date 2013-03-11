@@ -20,7 +20,6 @@ def larva():
 @roles('runs')
 def deploy_runs(paegan=None):
     stop_supervisord()
-    kill_pythons()
 
     larva()
     with cd(code_dir):
@@ -32,7 +31,6 @@ def deploy_runs(paegan=None):
 @roles('datasets')
 def deploy_datasets(paegan=None):
     stop_supervisord()
-    kill_pythons()
 
     larva()
     with cd(code_dir):
@@ -44,7 +42,6 @@ def deploy_datasets(paegan=None):
 @roles('web')
 def deploy_web(paegan=None):
     stop_supervisord()
-    kill_pythons()
 
     larva()
     with cd(code_dir):
@@ -56,7 +53,6 @@ def deploy_web(paegan=None):
 @roles('all')
 def deploy_all(paegan=None):
     stop_supervisord()
-    kill_pythons()
 
     larva()
     with cd(code_dir):
@@ -75,12 +71,6 @@ def update_paegan():
         run("pip install --upgrade --no-deps git+https://github.com/asascience-open/paegan.git@master#egg=paegan")
         run("pip install --upgrade --no-deps git+https://github.com/asascience-open/paegan-viz.git@master#egg=paegan-viz")
 
-@roles('runs','datasets','all')
-def kill_pythons():
-    admin()
-    with settings(warn_only=True):
-        run("sudo kill -QUIT $(ps aux | grep python | grep -v supervisord | awk '{print $2}')")
-
 def update_libs(paegan=None):
     larva()
     with cd(code_dir):
@@ -88,7 +78,6 @@ def update_libs(paegan=None):
             if paegan:
                 update_paegan()
             run("pip install -r requirements.txt")
-
 
 @roles('web', 'all')
 def restart_nginx():
@@ -106,6 +95,13 @@ def stop_supervisord():
         with settings(warn_only=True):
             run("supervisorctl -c ~/supervisord.conf stop all")
             run("kill -QUIT $(ps aux | grep supervisord | grep -v grep | awk '{print $2}')")
+
+    kill_pythons()
+
+def kill_pythons():
+    admin()
+    with settings(warn_only=True):
+        run("sudo kill -QUIT $(ps aux | grep python | grep -v supervisord | awk '{print $2}')")
 
 def start_supervisord():
     larva()

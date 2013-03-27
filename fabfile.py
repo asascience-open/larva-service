@@ -129,3 +129,12 @@ def setup_filesystem():
         run("sudo mkdir /scratch/cache")
         run("sudo chown -R larva:larva /scratch")
         run("sudo chown -R larva:larva /data")
+
+@roles('runs','datasets','web','all')
+def setup_munin():
+    admin()
+    run("sudo yum install -y munin-node")
+    run("sudo chkconfig munin-node on")
+    run("echo \"allow ^107\.22\.197\.91$\" | sudo tee -a /etc/munin/munin-node.conf")
+    run("echo \"allow ^10\.190\.178\.210$\" | sudo tee -a /etc/munin/munin-node.conf")
+    run("sudo /etc/init.d/munin-node restart")

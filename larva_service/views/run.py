@@ -2,6 +2,7 @@ from flask import render_template, redirect, url_for, request, flash, jsonify
 from larva_service import app, db, run_queue
 from larva_service.models.run import Run
 from larva_service.tasks.larva import run as larva_run
+from larva_service.views.helpers import requires_auth
 import json
 import pytz
 from larva_service.models import remove_mongo_keys
@@ -50,6 +51,7 @@ def run_larva_model(format=None):
 
 @app.route('/runs/<ObjectId:run_id>/delete', methods=['GET','DELETE'])
 @app.route('/runs/<ObjectId:run_id>/delete.<string:format>', methods=['GET','DELETE'])
+@requires_auth
 def delete_run(run_id, format=None):
     if format is None:
         format = 'html'
@@ -65,6 +67,7 @@ def delete_run(run_id, format=None):
         return redirect(url_for('runs'))
 
 @app.route('/runs/clear', methods=['GET'])
+@requires_auth
 def clear_runs():
     db.drop_collection("runs")
     return redirect(url_for('runs'))

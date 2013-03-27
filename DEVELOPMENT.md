@@ -27,6 +27,7 @@ Assumes you have:
     LOG_FILE=yes
     AWS_ACCESS_KEY_ID=yourkey
     AWS_SECRET_ACCESS_KEY=yoursecret
+    WEB_PASSWORD=yourwebpass
 
 ### Edit larva_service/development.py and larva_service/testing.py
     Add MongoDB connection information

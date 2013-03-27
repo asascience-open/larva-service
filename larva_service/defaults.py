@@ -5,6 +5,8 @@ DEBUG = False
 TESTING = False
 LOG_FILE = False
 
+WEB_PASSWORD = os.environ.get("WEB_PASSWORD")
+
 SECRET_KEY = os.environ.get("SECRET_KEY")
 
 # Database

@@ -1,4 +1,4 @@
-from larva_service import app, db
+from larva_service import app, db, slugify
 from flask import current_app
 from time import sleep
 from shapely.wkt import dumps, loads
@@ -197,11 +197,16 @@ def run(run_id):
 
             for filename in os.listdir(output_path):
                 outfile = os.path.join(output_path,filename)
+
+                # Upload the outputfiles with the same as the run name
+                name, ext = os.path.splitext(filename)
+                new_filename = slugify(unicode(run['name'])) + ext
+
                 k = Key(bucket)
-                k.key = "output/%s/%s" % (run_id, filename)
+                k.key = "output/%s/%s" % (run_id, new_filename)
                 k.set_contents_from_filename(outfile)
                 k.set_acl('public-read')
-                result_files.append("%s/%s" % (base_s3_url, filename))
+                result_files.append("%s/%s" % (base_s3_url, new_filename))
                 os.remove(outfile)
 
             shutil.rmtree(output_path, ignore_errors=True)

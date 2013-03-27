@@ -80,8 +80,8 @@ class Run(Document):
     def set_trackline(self):
         if self.trackline is None:
             for filepath in self.output:
-                if os.path.basename(filepath) == "trackline.geojson":
-                    # Get trackline.geojson and cache locally
+                if os.path.splitext(os.path.basename(filepath))[1] == ".geojson":
+                    # Get GeoJSON trackline and cache locally as WKT
                     t = urllib2.urlopen(filepath)
                     self.trackline = unicode(asShape(geojson.loads(t.read())).wkt)
         return self.trackline
@@ -149,10 +149,7 @@ class Run(Document):
 
         file_type = "Unknown (%s)" % ext
         if ext == ".zip":
-            if name.find('shp') != -1:
-                file_type = "Shapefile"
-            else:
-                file_type = "Zipfile"
+            file_type = "Shapefile"
         elif ext == ".nc":
             file_type = "NetCDF"
         elif ext == ".cache":

@@ -147,5 +147,4 @@ def update_env_variable(key,value):
 @roles('runs','datasets','web','all')
 def add_env_variable(key,value):
     larva()
-    run("sed -i '/environment=/ a\
-         %s=%s,' ~/supervisord.conf" % (key,value))
+    run("sed -i '/environment=/ a\    %s=%s,' ~/supervisord.conf" % (key,value))

@@ -138,3 +138,14 @@ def setup_munin():
     run("echo \"allow ^107\.22\.197\.91$\" | sudo tee -a /etc/munin/munin-node.conf")
     run("echo \"allow ^10\.190\.178\.210$\" | sudo tee -a /etc/munin/munin-node.conf")
     run("sudo /etc/init.d/munin-node restart")
+
+@roles('runs','datasets','web','all')
+def update_env_variable(key,value):
+    larva()
+    run("sed -i s/%s=.*/%s=%s,/g ~/supervisord.conf" % (key,key,value))
+
+@roles('runs','datasets','web','all')
+def add_env_variable(key,value):
+    larva()
+    run("sed -i '/environment=/ a\
+         %s=%s,' ~/supervisord.conf" % (key,value))

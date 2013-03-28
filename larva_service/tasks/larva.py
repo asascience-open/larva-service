@@ -140,17 +140,16 @@ def run(run_id):
             model.run(run['hydro_path'], output_path=output_path, bathy=bathy_file, output_formats=output_formats, cache=cache_file, remove_cache=False)
 
             # Move cache file to output directory so it gets uploaded to S3
-            # How about not.  These can be huge.
-            #try:
-            #    shutil.move(cache_file, output_path)
-            #except (IOError, OSError):
-            #    # The cache file was probably never written because the model failed
-            #    logger.info("No cache file from model exists")
-            #    pass
             try:
-                os.remove(cache_file)
+                shutil.move(cache_file, output_path)
             except (IOError, OSError):
+                # The cache file was probably never written because the model failed
                 logger.info("No cache file from model exists")
+                pass
+            #try:
+            #    os.remove(cache_file)
+            #except (IOError, OSError):
+            #    logger.info("No cache file from model exists")
 
             # Skip creating movie output_path
             """

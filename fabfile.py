@@ -8,7 +8,7 @@ code_dir = "/home/larva/larva-service"
 env.roledefs.update({
     'web': [],
     'datasets': [],
-    'runs': ["ec2-50-16-124-101.compute-1.amazonaws.com"],
+    'runs': [],
     'all' : ['174.129.241.244']
 })
 

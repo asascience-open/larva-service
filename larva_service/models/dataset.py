@@ -58,7 +58,7 @@ class Dataset(Document):
             #self.geometry = poly
             
             # Set Time bounds
-            mintime, maxtime = nc.gettimebounds(var='u')
+            mintime, maxtime = nc.gettimebounds(var=query_var)
             self.starting = mintime
             self.ending = maxtime
 

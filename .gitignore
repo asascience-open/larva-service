@@ -36,3 +36,5 @@ logs/*.txt
 cache/*
 output/*
 celerybeat*
+
+.fab

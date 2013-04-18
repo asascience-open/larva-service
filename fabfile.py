@@ -1,23 +1,58 @@
 from fabric.api import *
+from fabric.contrib.files import *
+import os
+from copy import copy
+import time
+
+"""
+    Call this with fab -c .fab TASK to pick up deploy variables
+    Required variables in .fab file:
+        webpass = x
+        secret_key = x
+        mongo_db = x
+        redis_db = x
+        aws_access = x
+        aws_secret = x
+        key_filename = x
+"""
 
 env.user = "larva"
-env.key_filename = '/home/dev/.ssh/particles.key'
 
 code_dir = "/home/larva/larva-service"
 
+data_snapshot = "snap-94f3cfd7"
+
 env.roledefs.update({
-    'web': [],
-    'datasets': [],
-    'runs': [],
-    'all' : ['174.129.241.244']
+    'setup'     : [],
+    'web'       : ['ec2-54-224-102-183.compute-1.amazonaws.com'],
+    'datasets'  : [],
+    'runs'      : ['ec2-54-235-5-187.compute-1.amazonaws.com','ec2-23-22-151-145.compute-1.amazonaws.com'],
+    'workers'   : ['ec2-54-242-181-26.compute-1.amazonaws.com'],
+    'all'       : []
 })
+# For copy and pasting when running tasks system wide
+# @roles('web','datasets','runs','workers','all')
 
 def admin():
     env.user = "ec2-user"
 def larva():
     env.user = "larva"
 
+@roles('workers')
+@parallel
+def deploy_workers(paegan=None):
+    stop_supervisord()
+
+    larva()
+    with cd(code_dir):
+        run("git pull origin master")
+        update_libs(paegan)
+        start_supervisord()
+        run("supervisorctl -c ~/supervisord.conf start runs")
+        run("supervisorctl -c ~/supervisord.conf start datasets")
+
 @roles('runs')
+@parallel
 def deploy_runs(paegan=None):
     stop_supervisord()
 
@@ -29,6 +64,7 @@ def deploy_runs(paegan=None):
         run("supervisorctl -c ~/supervisord.conf start runs")
 
 @roles('datasets')
+@parallel
 def deploy_datasets(paegan=None):
     stop_supervisord()
 
@@ -40,6 +76,7 @@ def deploy_datasets(paegan=None):
         run("supervisorctl -c ~/supervisord.conf start datasets")
 
 @roles('web')
+@parallel
 def deploy_web(paegan=None):
     stop_supervisord()
 
@@ -51,6 +88,7 @@ def deploy_web(paegan=None):
         run("supervisorctl -c ~/supervisord.conf start gunicorn")
 
 @roles('all')
+@parallel
 def deploy_all(paegan=None):
     stop_supervisord()
 
@@ -61,15 +99,111 @@ def deploy_all(paegan=None):
         start_supervisord()
         run("supervisorctl -c ~/supervisord.conf start all")
 
-def update_paegan():
+@roles('setup')
+@parallel
+def setup():
+    # Based on Amazon Linux AMI
+    admin()
+
+    # Enable EPEL repo
+    put(local_path='deploy/epel.repo', remote_path='/etc/yum.repos.d/epel.repo', use_sudo=True, mirror_local_mode=True)
+
+    # Install additonal packages
+    sudo("yum -y install proj-devel geos-devel git nginx python27 python27-devel gcc gcc-c++ make freetype-devel libpng-devel libtiff-devel libjpeg-devel")
+
+    # Add /usr/local/lib to ld's path
+    setup_ld()
+
+    # Setup larva user
+    setup_larva_user()
+
+    # Setup the python virtualenv
+    setup_burrito()
+
+    # Install GDAL
+    setup_gdal()
+
+    # Get code
+    setup_code()
+
+    # Setup Nginx
+    setup_nginx()
+
+    # Data/Bathy
+    setup_data()
+
+    # Setup Filesystem
+    setup_filesystem()
+
+    # Setup a Munin node
+    setup_munin()
+
+    # Setup supervisord
+    update_supervisord()
+
+def setup_ld():
+    admin()
+    sudo("su -c \"echo '/usr/local/lib' > /etc/ld.so.conf.d/local.conf\"")
+    sudo("ldconfig")
+
+def setup_gdal():
+    admin()
+    run("cd ~")
+    run("wget http://download.osgeo.org/gdal/gdal-1.9.2.tar.gz")
+    run("tar zxvf gdal-1.9.2.tar.gz")
+    with cd("gdal-1.9.2"):
+        run("./configure; make -j 4")
+        sudo("make install")
+
+def setup_nginx():
+    admin()
+    put(local_path='deploy/nginx.conf', remote_path='/etc/nginx/nginx.conf', use_sudo=True, mirror_local_mode=True)
+    upload_template('deploy/nginx_larva.conf', '/etc/nginx/conf.d/larva.conf', context=copy(env), use_jinja=True, use_sudo=True, backup=False, mirror_local_mode=True)
+    sudo("chkconfig nginx on")
+    restart_nginx()
+
+def update_supervisord():
+    larva()
+    run("pip install supervisor")
+    upload_template('deploy/supervisord.conf', '/home/larva/supervisord.conf', context=copy(env), use_jinja=True, use_sudo=False, backup=False, mirror_local_mode=True)
+
+def setup_code():
+    larva()
+    with cd("~"):
+        run("rm -rf larva-service")
+        run("git clone https://github.com/asascience-open/larva-service.git")
+
+    update_netcdf_libraries()
+
+@roles('runs','datasets','web','all')
+def update_netcdf_libraries():
+    admin()
+    #run("cd ~")
+    #run("wget https://asa-dev.s3.amazonaws.com/installNCO.txt")
+    #run("chmod 744 installNCO.txt")
+    #sudo("./installNCO.txt")
+
     larva()
     with cd(code_dir):
-        run("pip uninstall -y paegan paegan-viz")
         with settings(warn_only=True):
-            run("rm -rf ~/.virtualenvs/larva/build/paegan")
-            run("rm -rf ~/.virtualenvs/larva/build/paegan-viz")
-        run("pip install --upgrade --no-deps git+https://github.com/asascience-open/paegan.git@master#egg=paegan")
-        run("pip install --upgrade --no-deps git+https://github.com/asascience-open/paegan-viz.git@master#egg=paegan-viz")
+            run("pip uninstall netCDF4 paegan paegan-viz numpy")
+
+        run("pip install numpy==1.6.2")
+        run("HDF5_DIR=/usr/local/hdf5-1.8.10-patch1 NETCDF4_DIR=/usr/local/netcdf-4.2.1.1 PATH=$PATH:/usr/local/bin pip install -r requirements.txt")
+
+def setup_burrito():
+    larva()
+    run("curl -s https://raw.github.com/brainsik/virtualenv-burrito/master/virtualenv-burrito.sh | $SHELL")
+    run("mkvirtualenv -p /usr/bin/python27 larva")
+    run("echo 'workon larva' >> ~/.bash_profile")
+
+def setup_larva_user():
+    admin()
+    # Setup larva user
+    sudo("useradd larva")
+    sudo("mkdir /home/larva/.ssh")
+    upload_key_to_larva()
+    sudo("chown -R larva:larva /home/larva/.ssh")
 
 def update_libs(paegan=None):
     larva()
@@ -79,12 +213,10 @@ def update_libs(paegan=None):
                 update_paegan()
             run("pip install -r requirements.txt")
 
-@roles('web', 'all')
 def restart_nginx():
     admin()
-    run("sudo /etc/init.d/nginx restart")
+    sudo("/etc/init.d/nginx restart")
 
-@roles('runs','datasets','web','all')
 def supervisord_restart():
     stop_supervisord()
     start_supervisord()
@@ -101,7 +233,7 @@ def stop_supervisord():
 def kill_pythons():
     admin()
     with settings(warn_only=True):
-        run("sudo kill -QUIT $(ps aux | grep python | grep -v supervisord | awk '{print $2}')")
+        sudo("kill -QUIT $(ps aux | grep python | grep -v supervisord | awk '{print $2}')")
 
 def start_supervisord():
     larva()
@@ -109,42 +241,92 @@ def start_supervisord():
         with settings(warn_only=True):    
             run("supervisord -c ~/supervisord.conf")
 
-@roles('runs','datasets','web','all')
+def update_paegan():
+    larva()
+    with cd(code_dir):
+        run("pip uninstall -y paegan paegan-viz")
+        with settings(warn_only=True):
+            run("rm -rf ~/.virtualenvs/larva/build/paegan")
+            run("rm -rf ~/.virtualenvs/larva/build/paegan-viz")
+        run("pip install --upgrade --no-deps git+https://github.com/asascience-open/paegan.git@master#egg=paegan")
+        run("pip install --upgrade --no-deps git+https://github.com/asascience-open/paegan-viz.git@master#egg=paegan-viz")
+
 def upload_key_to_larva():
     admin()
     with settings(warn_only=True):
-        run("sudo su -c \"echo 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCDBacNAOzKzPmFpJOClNrUwAsoh9YCzpKKqenbbbXQ/fqDVsOw/z522YDYuGoiZ6475YBET9L13ck4xh0XP5rykUvnAs0pvW7Vu1ttPxHx2wDmTfffRtN9Zbw4Y19c9vy9+NeIjrJxyLWwwnBrPHqf1R+O9HuvgmVSccevVnGpaaOJ9puaAFrmNO5cXxEI4WW+6+jsMBaVZqIaOl4U/eMcPTOsP8fn7+ME0YuIAIM2QDZMAUlWablhFYmkP8yfHIehc6IKgV0SupPOjH4vNTeJTMB0uPxhXDuwlJaW2zmxf+hbz7fR4X+WTgryBdUbksdCUuyTkDyERHUiwL8JbsQZ asa-particles-ec2' > /home/larva/.ssh/authorized_keys\"")
-        run("sudo chown larva:larva /home/larva/.ssh/authorized_keys")
-        run("sudo chmod 600 /home/larva/.ssh/authorized_keys")
-        run("sudo chmod 700 /home/larva/.ssh")
+        sudo("su -c \"echo 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCDBacNAOzKzPmFpJOClNrUwAsoh9YCzpKKqenbbbXQ/fqDVsOw/z522YDYuGoiZ6475YBET9L13ck4xh0XP5rykUvnAs0pvW7Vu1ttPxHx2wDmTfffRtN9Zbw4Y19c9vy9+NeIjrJxyLWwwnBrPHqf1R+O9HuvgmVSccevVnGpaaOJ9puaAFrmNO5cXxEI4WW+6+jsMBaVZqIaOl4U/eMcPTOsP8fn7+ME0YuIAIM2QDZMAUlWablhFYmkP8yfHIehc6IKgV0SupPOjH4vNTeJTMB0uPxhXDuwlJaW2zmxf+hbz7fR4X+WTgryBdUbksdCUuyTkDyERHUiwL8JbsQZ asa-particles-ec2' > /home/larva/.ssh/authorized_keys\"")
+        sudo("chmod 600 /home/larva/.ssh/authorized_keys")
+        sudo("chmod 700 /home/larva/.ssh")
 
-@roles('runs','datasets','web','all')
+@roles('setup')
+def setup_data():
+    admin()
+    with settings(warn_only=True):
+        sudo("umount /data")
+        sudo("umount /dev/sdf")
+        sudo("mkdir /data")
+
+    # Get instance's ID
+    instance_id = run("wget -q -O - http://169.254.169.254/latest/meta-data/instance-id")
+    # Get instance's availability zone
+    zone = run("wget -q -O - http://169.254.169.254/latest/meta-data/placement/availability-zone")
+
+    # Detach the current volume
+    detach_vol_id = run("ec2-describe-instances %s --aws-access-key %s --aws-secret-key %s | awk '/\/dev\/sdf/ {print $3}'" % (instance_id, env.aws_access, env.aws_secret))
+    if detach_vol_id.find("vol-") == 0:
+        run("ec2-detach-volume %s --aws-access-key %s --aws-secret-key %s" % (detach_vol_id, env.aws_access, env.aws_secret))
+
+    # Create new volume from snapshot
+    volume = run("ec2-create-volume --aws-access-key %s --aws-secret-key %s --snapshot %s -z %s" % (env.aws_access, env.aws_secret, data_snapshot, zone))
+    #volume = "VOLUME    vol-164df04f    20  snap-94f3cfd7   us-east-1c  creating    2013-04-17T19:40:05+0000    standard"
+    vol_index = volume.find("vol-")
+    volume_id = volume[vol_index:vol_index+12]
+
+    # Wait for the old volume to be detached and new volume to be created
+    time.sleep(30)
+    sudo("ec2-attach-volume --aws-access-key %s --aws-secret-key %s -d /dev/sdf -i %s %s" % (env.aws_access, env.aws_secret, instance_id, volume_id))
+
+    # Delete the old volume
+    if detach_vol_id.find("vol-") == 0:
+        run("ec2-delete-volume %s --aws-access-key %s --aws-secret-key %s" % (detach_vol_id, env.aws_access, env.aws_secret))
+
+@roles('setup')
 def setup_filesystem():
     admin()
     with settings(warn_only=True):
-        run("sudo mount /dev/sdb /data")
-        run("sudo umount /dev/sdc")
-        run("sudo mount /dev/sdc /scratch")
-        run("sudo mkdir /scratch/output")
-        run("sudo mkdir /scratch/cache")
-        run("sudo chown -R larva:larva /scratch")
-        run("sudo chown -R larva:larva /data")
+        # Data is mounted at /dev/sdf
+        sudo("mount /dev/sdf /data")
+        sudo("chown -R larva:larva /data")
 
-@roles('runs','datasets','web','all')
+        # Use /dev/sdb because it is the only one a small instance will have
+        sudo("umount /media/ephemeral*")
+        sudo("umount /dev/sdb")
+        sudo("umount /scratch")
+        sudo("mkfs.ext4 /dev/sdb")
+        sudo("mkdir /scratch")
+        sudo("mount /dev/sdb /scratch")
+        sudo("mkdir -p /scratch/output")
+        sudo("mkdir -p /scratch/cache")
+        sudo("chown -R larva:larva /scratch")
+
 def setup_munin():
     admin()
-    run("sudo yum install -y munin-node")
-    run("sudo chkconfig munin-node on")
+    sudo("yum install -y munin-node")
+    sudo("chkconfig munin-node on")
     run("echo \"allow ^107\.22\.197\.91$\" | sudo tee -a /etc/munin/munin-node.conf")
     run("echo \"allow ^10\.190\.178\.210$\" | sudo tee -a /etc/munin/munin-node.conf")
-    run("sudo /etc/init.d/munin-node restart")
+    sudo("/etc/init.d/munin-node restart")
 
-@roles('runs','datasets','web','all')
-def update_env_variable(key,value):
-    larva()
-    run("sed -i s/%s=.*/%s=%s,/g ~/supervisord.conf" % (key,key,value))
 
-@roles('runs','datasets','web','all')
-def add_env_variable(key,value):
-    larva()
-    run("sed -i '/environment=/ a\    %s=%s,' ~/supervisord.conf" % (key,value))
+# Usually this is all that needs to be called
+def deploy(paegan=None):
+    if env.roledefs['web']:
+        execute(deploy_web, paegan=paegan)
+    if env.roledefs['datasets']:
+        execute(deploy_datasets, paegan=paegan)
+    if env.roledefs['runs']:
+        execute(deploy_runs, paegan=paegan)
+    if env.roledefs['workers']:
+        execute(deploy_workers, paegan=paegan)
+    if env.roledefs['all']:
+        execute(deploy_all, paegan=paegan)

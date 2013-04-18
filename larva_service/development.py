@@ -1,7 +1,7 @@
 DEBUG = True
 LOG_FILE = True
 
-S3_BUCKET = "larvamap-development"
+S3_BUCKET = "larvamap-dev"
 
 BATHY_PATH = "/data/lm/bathy/ETOPO1_Bed_g_gmt4.grd"
 CACHE_PATH = "/data/lm/cache"

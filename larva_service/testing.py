@@ -22,7 +22,7 @@ REDIS_USERNAME = url.username
 REDIS_PASSWORD = url.password
 REDIS_DB = url.path[1:]
 
-S3_BUCKET = "larvamap-testing"
+S3_BUCKET = "larvamap-test"
 
 BATHY_PATH = "/data/lm/bathy/ETOPO1_Bed_g_gmt4.grd"
 CACHE_PATH = "/data/lm/cache"

@@ -57,7 +57,8 @@ class Run(Document):
     default_values = {
                       'created': datetime.utcnow,
                       'time_chunk'  : 10,
-                      'horiz_chunk' : 5
+                      'horiz_chunk' : 5,
+                      'time_method' : u'interp'
                       }
     migration_handler = RunMigration
 

@@ -1,6 +1,7 @@
 from mongokit import Document, DocumentMigration
 from larva_service import db, app, redis_connection
 from datetime import datetime
+from dateutil.parser import parse as dateparse
 import json
 import urllib2
 import pytz
@@ -173,34 +174,43 @@ class Run(Document):
         skip_keys = ['_id','cached_behavior','created','task_id','output','trackline','task_result', 'ended']
         d = {}
         for key,value in self.iteritems():
-            try:
-                skip_keys.index(key)
-                pass
-            except:
-                # Not found, so proceed
+            if key not in skip_keys:
                 if key == 'start':
-                    d[key] = calendar.timegm(value.utctimetuple()) * 1000
+                    d[key] = value.isoformat()
                 else:
                     d[key] = value
+
 
         return d
 
     def load_run_config(self, run):
         # Set the 1:1 relationship between the config and this object
         for key, value in run.iteritems():
-            if key == 'start':
-                self[key] = datetime.fromtimestamp(value / 1000, pytz.utc)
-                continue
-                
-            if key == 'release_depth' or key == 'horiz_dispersion' or key == 'vert_dispersion':
-                self[key] = float(value)
-                continue
 
             # Don't save keys that shouldn't be part of an initial run object
             if key in Run.restrict_loading:
                 continue
 
-            self[key] = value
+            if key == 'start':
+                # Text DateTime
+                try:
+                    # Convert to UTC
+                    d = dateparse(value)
+                    if d.tzinfo is None:
+                        d = d.replace(tzinfo=pytz.utc)
+                    self[key] = d.astimezone(pytz.utc)
+                except:
+                     # Timestamp DateTime  (assume in UTC)
+                    try:
+                        self[key] = datetime.fromtimestamp(value / 1000, pytz.utc)
+                    except:
+                        raise
+                
+            elif key == 'release_depth' or key == 'horiz_dispersion' or key == 'vert_dispersion':
+                self[key] = float(value)
+
+            else:
+                self[key] = value
 
         if self.behavior:
             try:
@@ -208,5 +218,6 @@ class Run(Document):
                 self.cached_behavior = json.loads(b.read())
             except:
                 pass
+
 
 db.register([Run])

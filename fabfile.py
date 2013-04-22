@@ -24,7 +24,7 @@ data_snapshot = "snap-94f3cfd7"
 
 env.roledefs.update({
     'setup'     : [],
-    'web'       : ['ec2-54-224-102-183.compute-1.amazonaws.com'],
+    'web'       : ['services.larvamap.asascience.com'],
     'datasets'  : [],
     'runs'      : ['ec2-54-235-5-187.compute-1.amazonaws.com','ec2-23-22-151-145.compute-1.amazonaws.com'],
     'workers'   : ['ec2-54-242-181-26.compute-1.amazonaws.com'],

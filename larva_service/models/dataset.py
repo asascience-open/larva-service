@@ -62,7 +62,24 @@ class Dataset(Document):
             self.starting = mintime
             self.ending = maxtime
 
-            self.variables = nc.getvariableinfo()
+            def clean(value):
+                try:
+                    str(type(value)).index("numpy")
+                except:
+                    return value
+                else:
+                    return value.tolist()
+
+            
+            cleaned_info = {}
+            variables = nc.getvariableinfo()
+            for k,v in variables.items():
+                # Strip out numpy arrays into BSON encodable things.
+                cleaned_var = { key:clean(value) for key,value in v.items() }
+                cleaned_info[k] = cleaned_var
+
+            self.variables = cleaned_info
+
         except:
             app.logger.warning("Could not calculate bounds for this dataset")
             raise

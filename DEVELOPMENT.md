@@ -2,54 +2,28 @@
 
 Assumes you have:
 * python >= 2.7.2
-* MongoDB >= 1.8.2
+* MongoDB >= 1.8.2 (running)
 * foreman (ruby gem)
-* heroku (ruby gem)
 * redis (running)
 
-### Setup Mongo user for results
-    $ mongo
-    > use admin
-    > db.addUser('admin', 'adminpassword')
-    > db.auth('admin', 'adminpassword')
-    > use larvamap_development
-    > db.addUser("larvamap","yourpassword")
-    > use larvamap_testing
-    > db.addUser("larvamap","yourpassword")
-    > exit
-
 ### Install the requirements
-    $ pip install -r requirements.rb
+    $ pip install -r requirements.txt
 
 ### Create an .env file with the following contents
     APPLICATION_SETTINGS=development.py
-    SECRET_KEY=somethinglongandunique
+    SECRET_KEY='supersecretkeysupersuper'
+    # Omit this to disable logging to a file.
+    # Setting it to any value will enable logging to a file.
     LOG_FILE=yes
-    AWS_ACCESS_KEY_ID=yourkey
-    AWS_SECRET_ACCESS_KEY=yoursecret
-    WEB_PASSWORD=yourwebpass
+    MONGO_URI="mongodb://localhost:27017/larvaservice_development"
+    REDIS_URI="redis://localhost:6379/0"
+    # AWS account to upload results to
+    AWS_ACCESS_KEY_ID=KEY
+    AWS_SECRET_ACCESS_KEY=SECRET
+    WEB_PASSWORD=WHATEVER_YOU_WANT
 
-### Edit larva_service/development.py and larva_service/testing.py
-    Add MongoDB connection information
-    Add Redis URL as BROKER_URL
+### Edit the .env file
+    With your endpoints/passwords/whatevs
 
 ### Start the local server
     $ foreman start
-
-## Starting a Heroku instance
-
-    $ heroku create --stack cedar NAME_OF_APP
-
-    $ heroku config:add APPLICATION_SETTINGS=production.py
-    $ heroku config:add SECRET_KEY=somethinglongandunique
-    $ heroku config:add AWS_ACCESS_KEY_ID=yourkey
-    $ heroku config:add AWS_SECRET_ACCESS_KEY=yoursecret
-
-    $ heroku addons:add mongolab:starter
-    $ heroku addons:add redistogo:nano
-    $ git push heroku master
-    $ heroku ps:scale web=1 celeryd=1
-
-## Setting up foreman to upstart (on production)
-
-    $ foreman export upstart /etc/init -u larva -p 8000 -l /home/larva/larva-service/logs -a larva

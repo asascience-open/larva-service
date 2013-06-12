@@ -25,5 +25,12 @@ Assumes you have:
 ### Edit the .env file
     With your endpoints/passwords/whatevs
 
+### Edit development.py and testing.py 
+    With paths to the following:
+    BATHY_PATH = "somewhere/ETOPO1_Bed_g_gmt4.grd"
+    CACHE_PATH = "folder/somewhere"
+    OUTPUT_PATH = "folder/somewhere"
+    SHORE_PATH = "somewhere/New_Land_Clean.shp"
+
 ### Start the local server
     $ foreman start

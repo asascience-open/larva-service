@@ -41,6 +41,7 @@ from rq import Queue
 redis_connection = redis.from_url(app.config.get("REDIS_URI"))
 run_queue = Queue('runs', connection=redis_connection, default_timeout=604800) # 1 week timeout
 dataset_queue = Queue('datasets', connection=redis_connection, default_timeout=600) # 10 min timeout
+shoreline_queue = Queue('shorelines', connection=redis_connection, default_timeout=600) # 10 min timeout
 
 # Create the database connection
 db = MongoKit(app)

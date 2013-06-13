@@ -1,4 +1,4 @@
-from larva_service.models import run, dataset
+from larva_service.models import run, dataset, shoreline
 
 def remove_mongo_keys(d, extra=None):
 

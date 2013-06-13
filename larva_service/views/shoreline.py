@@ -19,6 +19,17 @@ def shorelines(format=None):
 
     if format == 'html':
         return render_template('shorelines.html', shorelines=shorelines)
+    elif format == 'json':
+        jsonsl = []
+        for sl in shorelines:
+            js = json.loads(sl.to_json())
+            remove_mongo_keys(js)
+            js['_id'] = unicode(sl._id)
+            jsonsl.append(js)
+        return jsonify( { 'results' : jsonsl } )
+    else:
+        flash("Response format '%s' not supported" % format)
+        return redirect(url_for('shorelines'))
 
 @app.route('/shoreline', methods=['POST'])
 @requires_auth

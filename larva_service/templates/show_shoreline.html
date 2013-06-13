@@ -1,0 +1,28 @@
+{% extends "layout.html" %}
+
+{% block javascript %}
+    {{ super() }}
+    <script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=false"></script>
+{% endblock %}
+
+{% block page %}
+
+    <h1>{{ shoreline.name }}</h1>
+    <h2>{{ shoreline.path }}</h2>
+
+    <hr />
+
+    <div class="row">
+        <dl class="dl-horizontal span8">
+            {% for key, value in shoreline|dictsort %}
+                {% if key != 'task_id' %}
+                    <dt>{{ key }} </dt>
+                    <dd>{{ value }}</dd>
+                {% endif %}
+            {% endfor %}
+        </dl>
+
+        <!--<div id="map_canvas" class="span4" style="height: 300px;"></div>-->
+    </div>
+
+{% endblock %}

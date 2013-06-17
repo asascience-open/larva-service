@@ -109,12 +109,14 @@ def run(run_id):
             if run is None:
                 return "Failed to locate run %s. May have been deleted while task was in the queue?" % run_id
 
-            geometry = loads(run['geometry'])
-            start_depth = run['release_depth']
-            num_particles = run['particles']
-            time_step = run['timestep']
-            num_steps = int(math.ceil((run['duration'] * 24 * 60 * 60) / time_step))
-            start_time = run['start'].replace(tzinfo=pytz.utc)
+            geometry       = loads(run['geometry'])
+            start_depth    = run['release_depth']
+            num_particles  = run['particles']
+            time_step      = run['timestep']
+            num_steps      = int(math.ceil((run['duration'] * 24 * 60 * 60) / time_step))
+            start_time     = run['start'].replace(tzinfo = pytz.utc)
+            shoreline_path = run['shoreline_path']
+            shoreline_feat = run['shoreline_feature']
 
             # Set up output directory/bucket for run
             output_formats = ['Shapefile','NetCDF','Trackline']
@@ -127,11 +129,10 @@ def run(run_id):
                 models.append(l)
             models.append(Transport(horizDisp=run['horiz_dispersion'], vertDisp=run['vert_dispersion']))
 
-            shoreline_path = current_app.config.get("SHORE_PATH", None)
 
             # Setup ModelController
             model = ModelController(geometry=geometry, depth=start_depth, start=start_time, step=time_step, nstep=num_steps, npart=num_particles, models=models, use_bathymetry=True, use_shoreline=True,
-                time_chunk=run['time_chunk'], horiz_chunk=run['horiz_chunk'], time_method=run['time_method'], shoreline_path=shoreline_path, reverse_distance=1500)
+                time_chunk=run['time_chunk'], horiz_chunk=run['horiz_chunk'], time_method=run['time_method'], shoreline_path=shoreline_path, shoreline_feature=shoreline_feat, reverse_distance=1500)
 
             # Run the model
             cache_file = os.path.join(current_app.config['CACHE_PATH'], "hydro_" + run_id + ".cache")

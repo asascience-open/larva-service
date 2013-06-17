@@ -8,6 +8,7 @@ import pytz
 from larva_service.models import remove_mongo_keys
 from pymongo import DESCENDING
 from rq import cancel_job
+from shapely.geometry import box
 
 @app.route('/shorelines', methods=['GET'])
 @app.route('/shorelines.<string:format>', methods=['GET'])
@@ -47,6 +48,15 @@ def add_shoreline():
     flash("Shoreline created", 'success')
     return redirect(url_for('shorelines'))
 
+@app.route('/shorelines/<ObjectId:shoreline_id>/geoms', methods=['POST'])
+def shoreline_geoms(shoreline_id):
+    shoreline = db.Shoreline.find_one( { '_id' : shoreline_id } )
+    miny, minx, maxy, maxx = [float(v) for v in request.form.get('bounds').split(',')]
+    bx = box(minx, miny, maxx, maxy)
+
+    geoms = shoreline.google_maps_coordinates(bx.wkt)
+    return jsonify({'geoms':geoms})
+
 @app.route('/shorelines/<ObjectId:shoreline_id>', methods=['GET'])
 @app.route('/shorelines/<ObjectId:shoreline_id>.<string:format>', methods=['GET'])
 def show_shoreline(shoreline_id, format=None):
@@ -56,7 +66,8 @@ def show_shoreline(shoreline_id, format=None):
     shoreline = db.Shoreline.find_one( { '_id' : shoreline_id } )
 
     if format == 'html':
-        return render_template('show_shoreline.html', shoreline=shoreline)
+        markers = shoreline.google_maps_coordinates()
+        return render_template('show_shoreline.html', shoreline=shoreline, markers=markers)
     elif format == 'json':
         jsond = json.loads(shoreline.to_json())
         remove_mongo_keys(jsond) #destructive method

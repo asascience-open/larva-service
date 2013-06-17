@@ -2,7 +2,100 @@
 
 {% block javascript %}
     {{ super() }}
+    <script type="text/javascript" src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
     <script type="text/javascript" src="http://maps.google.com/maps/api/js?sensor=false"></script>
+    <script type="text/javascript">
+
+        $(function() {
+            // init map
+            var myOptions = {
+                center    : new google.maps.LatLng(0, 0),
+                zoom      : 10,
+                mapTypeId : google.maps.MapTypeId.ROADMAP,
+                maxZoom   : 8
+            };
+            var polys = [];
+            var map = new google.maps.Map(document.getElementById("map_canvas"), myOptions);
+            var latlngbounds = new google.maps.LatLngBounds( );
+
+            function addPoly(latLngList) {
+              if (latLngList.length == 0) { return; }
+
+              var poly = new google.maps.Polygon({ map: map, path: [], strokeColor: "#FF0000", fillColor: "#FF0000", strokeOpacity: 1.0, strokeWeight: 2, fillOpacity: 0.35 });
+              for (var i = 0; i < latLngList.length; i++) {
+                var ll = latLngList[i];
+                poly.getPath().push(ll);
+                latlngbounds.extend(ll);
+              }
+      
+              polys.push(poly);
+            }
+
+            var latLngList = [];
+            {% if markers|length > 1 %}
+                {% for position in markers %}
+                    latLngList.push(new google.maps.LatLng({{position[0]}}, {{position[1]}}));
+                {% endfor %}
+            {% endif %}
+
+            addPoly(latLngList);
+            map.fitBounds(latlngbounds);
+
+            google.maps.event.addListener(map, 'idle', function() {
+              var zoom = map.getZoom();
+              var bounds = map.getBounds();
+
+              if (zoom >= 4) {
+                map.setOptions({
+                  draggable: false,
+                  scrollwheel: false,
+                  disableDoubleClickZoom: true,
+                  zoomControl: false,
+                  scaleControl: false,
+                });
+
+                var loadel = $('#loading_text').fadeToggle();
+                while (polys.length > 0) {
+                  p = polys.pop();
+                  p.setMap(null);
+                }
+
+                $.post('{{ url_for('shoreline_geoms', shoreline_id=shoreline._id) }}',
+                  {
+                    bounds: bounds.toUrlValue(),
+                  }
+                )
+                  .done(function(d) {
+                    for (var i = 0; i < d.geoms.length; i++) {
+                      var latLngList = [];
+                      for (var j = 0; j < d.geoms[i].length; j++) {
+                        latLngList.push(new google.maps.LatLng(d.geoms[i][j][0], d.geoms[i][j][1]));
+                      }
+
+                      addPoly(latLngList);
+                    }
+                  })
+                  .always(function(d) {
+                    map.setOptions({
+                      draggable: true,
+                      scrollwheel: true,
+                      disableDoubleClickZoom: false,
+                      zoomControl: true,
+                      scaleControl: true,
+                    });
+                    loadel.fadeToggle();
+                  });
+              } else {
+                while (polys.length > 0) {
+                  p = polys.pop();
+                  p.setMap(null);
+                }
+
+                addPoly(latLngList);  // should be ref to original
+              }
+            });
+        });
+    </script>
 {% endblock %}
 
 {% block page %}
@@ -22,7 +115,10 @@
             {% endfor %}
         </dl>
 
-        <!--<div id="map_canvas" class="span4" style="height: 300px;"></div>-->
+        <div class="span4">
+          <div id="map_canvas" style="height: 300px;"></div>
+          <div id="loading_text" style="display: none;"><h4>Loading...</h4></div>
+        </div>
     </div>
 
 {% endblock %}

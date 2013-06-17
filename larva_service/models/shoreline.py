@@ -3,7 +3,7 @@ import os
 from flask.ext.mongokit import Document
 from larva_service import app, db, redis_connection
 from datetime import datetime
-from shapely.geometry import Point
+from shapely.geometry import Point, asShape, Polygon, MultiPolygon
 from shapely.wkt import loads
 from paegan.transport.shoreline import Shoreline as PTShoreline
 from shapely.geometry import box
@@ -44,5 +44,34 @@ class Shoreline(Document):
         if caps is not None:
             self.bbox  = unicode(caps['LatLongBoundingBox'].wkt)
             self.title = unicode(caps['Name'])
+
+    def google_maps_coordinates(self, bbox=None):
+        marker_positions = []
+        if bbox:
+            s = PTShoreline(path=self.path, feature_name=self.feature_name)
+            geo_json = s.get_geoms_for_bounds(bbox)
+            geo = [asShape(g) for g in geo_json]
+        elif self.geometry:
+            geo = loads(self.geometry)
+        elif self.bbox:
+            geo = loads(self.bbox)
+        else:
+            return marker_positions
+
+        # Google maps is y,x not x,y
+        if isinstance(geo, Point):
+            marker_positions.append((geo.coords[0][1], geo.coords[0][0]))
+        elif isinstance(geo, list):
+            for g in geo:
+                if isinstance(g, Polygon):
+                    marker_positions.append([(pt[1], pt[0]) for pt in g.exterior.coords])
+                elif isinstance(g, MultiPolygon):
+                    for subg in g:
+                        marker_positions.append([(pt[1], pt[0]) for pt in subg.exterior.coords])
+        else:
+            for pt in geo.exterior.coords:
+                marker_positions.append((pt[1], pt[0]))
+
+        return marker_positions
 
 db.register([Shoreline])

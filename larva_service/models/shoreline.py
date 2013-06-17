@@ -30,7 +30,12 @@ class Shoreline(Document):
                       }
 
     def status(self):
-        pass
+        if Job.exists(self.task_id, connection=redis_connection):
+            job = Job.fetch(self.task_id, connection=redis_connection)
+            job.refresh()
+            return job.status
+        else:
+            return "unknown"
 
     def get_info(self):
         s = PTShoreline(path=self.path, feature_name=self.feature_name)

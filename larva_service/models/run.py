@@ -27,6 +27,10 @@ class RunMigration(DocumentMigration):
         self.target = {'ended':{'$exists': False}}
         self.update = {'$set':{'ended':""}}
 
+    def allmigration04__add_shoreline_fields(self):
+        self.target = {'shoreline_path':{'$exists':False}, 'shoreline_feature':{'$exists':False}}
+        self.update = {'$set':{'shoreline_path':u'', 'shoreline_feature':u''}}
+
 class Run(Document):
     __collection__ = 'runs'
     use_dot_notation = True
@@ -52,7 +56,9 @@ class Run(Document):
        'output'             : list,
        'task_result'        : unicode,
        'trackline'          : unicode,
-       'ended'              : datetime
+       'ended'              : datetime,
+       'shoreline_path'     : unicode,
+       'shoreline_feature'  : unicode
     }
     default_values = {
                       'created': datetime.utcnow,

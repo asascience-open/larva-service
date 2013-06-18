@@ -64,15 +64,24 @@ class Shoreline(Document):
         else:
             return marker_positions
 
+        THRESHOLD=100000
+
         # Google maps is y,x not x,y
         if isinstance(geo, Point):
             marker_positions.append((geo.coords[0][1], geo.coords[0][0]))
         elif isinstance(geo, list):
+            total = 0
             for g in geo:
                 if isinstance(g, Polygon):
+                    total += len(g.exterior.coords)
+                    if total > THRESHOLD:
+                        return None
                     marker_positions.append([(pt[1], pt[0]) for pt in g.exterior.coords])
                 elif isinstance(g, MultiPolygon):
                     for subg in g:
+                        total += len(subg.exterior.coords)
+                        if total > THRESHOLD:
+                            return None
                         marker_positions.append([(pt[1], pt[0]) for pt in subg.exterior.coords])
         else:
             for pt in geo.exterior.coords:

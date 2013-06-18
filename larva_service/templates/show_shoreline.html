@@ -12,7 +12,8 @@
                 center    : new google.maps.LatLng(0, 0),
                 zoom      : 10,
                 mapTypeId : google.maps.MapTypeId.ROADMAP,
-                maxZoom   : 8
+                maxZoom   : 14,
+                streetViewControl: false,
             };
             var polys = [];
             var map = new google.maps.Map(document.getElementById("map_canvas"), myOptions);
@@ -45,7 +46,8 @@
               var zoom = map.getZoom();
               var bounds = map.getBounds();
 
-              if (zoom >= 4) {
+              if (zoom >= 7) {
+
                 map.setOptions({
                   draggable: false,
                   scrollwheel: false,
@@ -66,13 +68,22 @@
                   }
                 )
                   .done(function(d) {
-                    for (var i = 0; i < d.geoms.length; i++) {
-                      var latLngList = [];
-                      for (var j = 0; j < d.geoms[i].length; j++) {
-                        latLngList.push(new google.maps.LatLng(d.geoms[i][j][0], d.geoms[i][j][1]));
+                    if (d.geoms === null) {
+                      while (polys.length > 0) {
+                        p = polys.pop();
+                        p.setMap(null);
                       }
 
                       addPoly(latLngList);
+                    } else {
+                      for (var i = 0; i < d.geoms.length; i++) {
+                        var newLatLngList = [];
+                        for (var j = 0; j < d.geoms[i].length; j++) {
+                          newLatLngList.push(new google.maps.LatLng(d.geoms[i][j][0], d.geoms[i][j][1]));
+                        }
+
+                        addPoly(newLatLngList);
+                      }
                     }
                   })
                   .always(function(d) {

@@ -26,12 +26,13 @@ env.roledefs.update({
     'setup'     : [],
     'web'       : ['services.larvamap.asascience.com'],
     'datasets'  : [],
+    'shorelines': [],
     'runs'      : ['ec2-54-235-5-187.compute-1.amazonaws.com','ec2-23-22-151-145.compute-1.amazonaws.com'],
     'workers'   : ['ec2-54-242-181-26.compute-1.amazonaws.com'],
     'all'       : []
 })
 # For copy and pasting when running tasks system wide
-# @roles('web','datasets','runs','workers','all')
+# @roles('web','datasets','shorelines','runs','workers','all')
 
 def admin():
     env.user = "ec2-user"
@@ -40,62 +41,75 @@ def larva():
 
 @roles('workers')
 @parallel
-def deploy_workers(paegan=None):
+def deploy_workers():
     stop_supervisord()
 
     larva()
     with cd(code_dir):
         run("git pull origin master")
-        update_libs(paegan)
+        update_libs()
         start_supervisord()
         run("supervisorctl -c ~/supervisord.conf start runs")
         run("supervisorctl -c ~/supervisord.conf start datasets")
+        run("supervisorctl -c ~/supervisord.conf start shorelines")
 
 @roles('runs')
 @parallel
-def deploy_runs(paegan=None):
+def deploy_runs():
     stop_supervisord()
 
     larva()
     with cd(code_dir):
         run("git pull origin master")
-        update_libs(paegan)
+        update_libs()
         start_supervisord()
         run("supervisorctl -c ~/supervisord.conf start runs")
 
 @roles('datasets')
 @parallel
-def deploy_datasets(paegan=None):
+def deploy_datasets():
     stop_supervisord()
 
     larva()
     with cd(code_dir):
         run("git pull origin master")
-        update_libs(paegan)
+        update_libs()
         start_supervisord()
         run("supervisorctl -c ~/supervisord.conf start datasets")
 
-@roles('web')
+@roles('shorelines')
 @parallel
-def deploy_web(paegan=None):
+def deploy_shorelines():
     stop_supervisord()
 
     larva()
     with cd(code_dir):
         run("git pull origin master")
-        update_libs(paegan)
+        update_libs()
+        start_supervisord()
+        run("supervisorctl -c ~/supervisord.conf start shorelines")
+
+@roles('web')
+@parallel
+def deploy_web():
+    stop_supervisord()
+
+    larva()
+    with cd(code_dir):
+        run("git pull origin master")
+        update_libs()
         start_supervisord()
         run("supervisorctl -c ~/supervisord.conf start gunicorn")
 
 @roles('all')
 @parallel
-def deploy_all(paegan=None):
+def deploy_all():
     stop_supervisord()
 
     larva()
     with cd(code_dir):
         run("git pull origin master")
-        update_libs(paegan)
+        update_libs()
         start_supervisord()
         run("supervisorctl -c ~/supervisord.conf start all")
 
@@ -175,7 +189,7 @@ def setup_code():
 
     update_netcdf_libraries()
 
-@roles('runs','datasets','web','all')
+@roles('runs','datasets','shorelines','web','all')
 def update_netcdf_libraries():
     admin()
     #run("cd ~")
@@ -186,7 +200,7 @@ def update_netcdf_libraries():
     larva()
     with cd(code_dir):
         with settings(warn_only=True):
-            run("pip uninstall netCDF4 paegan paegan-viz numpy")
+            run("pip uninstall netCDF4 numpy")
 
         run("pip install numpy==1.6.2")
         run("HDF5_DIR=/usr/local/hdf5-1.8.10-patch1 NETCDF4_DIR=/usr/local/netcdf-4.2.1.1 PATH=$PATH:/usr/local/bin pip install -r requirements.txt")
@@ -205,12 +219,10 @@ def setup_larva_user():
     upload_key_to_larva()
     sudo("chown -R larva:larva /home/larva/.ssh")
 
-def update_libs(paegan=None):
+def update_libs():
     larva()
     with cd(code_dir):
         with settings(warn_only=True):
-            if paegan:
-                update_paegan()
             run("pip install -r requirements.txt")
 
 def restart_nginx():
@@ -240,16 +252,6 @@ def start_supervisord():
     with cd(code_dir):
         with settings(warn_only=True):    
             run("supervisord -c ~/supervisord.conf")
-
-def update_paegan():
-    larva()
-    with cd(code_dir):
-        run("pip uninstall -y paegan paegan-viz")
-        with settings(warn_only=True):
-            run("rm -rf ~/.virtualenvs/larva/build/paegan")
-            run("rm -rf ~/.virtualenvs/larva/build/paegan-viz")
-        run("pip install --upgrade --no-deps git+https://github.com/asascience-open/paegan.git@master#egg=paegan")
-        run("pip install --upgrade --no-deps git+https://github.com/asascience-open/paegan-viz.git@master#egg=paegan-viz")
 
 def upload_key_to_larva():
     admin()
@@ -319,14 +321,16 @@ def setup_munin():
 
 
 # Usually this is all that needs to be called
-def deploy(paegan=None):
+def deploy():
     if env.roledefs['web']:
-        execute(deploy_web, paegan=paegan)
+        execute(deploy_web)
     if env.roledefs['datasets']:
-        execute(deploy_datasets, paegan=paegan)
+        execute(deploy_datasets)
+    if env.roledefs['shorelines']:
+        execute(deploy_shorelines)
     if env.roledefs['runs']:
-        execute(deploy_runs, paegan=paegan)
+        execute(deploy_runs)
     if env.roledefs['workers']:
-        execute(deploy_workers, paegan=paegan)
+        execute(deploy_workers)
     if env.roledefs['all']:
-        execute(deploy_all, paegan=paegan)
+        execute(deploy_all)

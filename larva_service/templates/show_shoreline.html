@@ -110,7 +110,7 @@
             {% for key, value in shoreline|dictsort %}
                 {% if key != 'task_id' %}
                     <dt>{{ key }} </dt>
-                    <dd>{{ value }}</dd>
+                    <dd>{{ value or '&nbsp;'|safe }}</dd>
                 {% endif %}
             {% endfor %}
         </dl>

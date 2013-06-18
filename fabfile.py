@@ -179,7 +179,7 @@ def setup_nginx():
 def update_supervisord():
     larva()
     run("pip install supervisor")
-    upload_template('deploy/supervisord.conf', '/home/larva/supervisord.conf', context=copy(env), use_jinja=True, use_sudo=False, backup=False, mirror_local_mode=True)
+    upload_template('deploy/supervisord.conf', '/home/larva/supervisord.conf', context=copy(env), use_jinja=True, use_sudo=False, backup=False, mirror_local_mode=True, template_dir='.')
 
 def setup_code():
     larva()

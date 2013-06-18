@@ -26,12 +26,13 @@ env.roledefs.update({
     'setup'     : [],
     'web'       : ['services.larvamap.asascience.com'],
     'datasets'  : [],
+    'shorelines': [],
     'runs'      : ['ec2-54-235-5-187.compute-1.amazonaws.com','ec2-23-22-151-145.compute-1.amazonaws.com'],
     'workers'   : ['ec2-54-242-181-26.compute-1.amazonaws.com'],
     'all'       : []
 })
 # For copy and pasting when running tasks system wide
-# @roles('web','datasets','runs','workers','all')
+# @roles('web','datasets','shorelines','runs','workers','all')
 
 def admin():
     env.user = "ec2-user"
@@ -50,6 +51,7 @@ def deploy_workers(paegan=None):
         start_supervisord()
         run("supervisorctl -c ~/supervisord.conf start runs")
         run("supervisorctl -c ~/supervisord.conf start datasets")
+        run("supervisorctl -c ~/supervisord.conf start shorelines")
 
 @roles('runs')
 @parallel
@@ -74,6 +76,18 @@ def deploy_datasets(paegan=None):
         update_libs(paegan)
         start_supervisord()
         run("supervisorctl -c ~/supervisord.conf start datasets")
+
+@roles('shorelines')
+@parallel
+def deploy_shorelines(paegan=None):
+    stop_supervisord()
+
+    larva()
+    with cd(code_dir):
+        run("git pull origin master")
+        update_libs(paegan)
+        start_supervisord()
+        run("supervisorctl -c ~/supervisord.conf start shorelines")
 
 @roles('web')
 @parallel
@@ -175,7 +189,7 @@ def setup_code():
 
     update_netcdf_libraries()
 
-@roles('runs','datasets','web','all')
+@roles('runs','datasets','shorelines','web','all')
 def update_netcdf_libraries():
     admin()
     #run("cd ~")
@@ -324,6 +338,8 @@ def deploy(paegan=None):
         execute(deploy_web, paegan=paegan)
     if env.roledefs['datasets']:
         execute(deploy_datasets, paegan=paegan)
+    if env.roledefs['shorelines']:
+        execute(deploy_shorelines, paegan=paegan)
     if env.roledefs['runs']:
         execute(deploy_runs, paegan=paegan)
     if env.roledefs['workers']:

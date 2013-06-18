@@ -223,6 +223,7 @@ def update_libs():
     larva()
     with cd(code_dir):
         with settings(warn_only=True):
+            run("pip uninstall -y paegan paegan-viz paegan-transport")
             run("pip install -r requirements.txt")
 
 def restart_nginx():
@@ -250,7 +251,7 @@ def kill_pythons():
 def start_supervisord():
     larva()
     with cd(code_dir):
-        with settings(warn_only=True):    
+        with settings(warn_only=True):
             run("supervisord -c ~/supervisord.conf")
 
 def upload_key_to_larva():

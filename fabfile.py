@@ -23,12 +23,12 @@ code_dir = "/home/larva/larva-service"
 data_snapshot = "snap-94f3cfd7"
 
 env.roledefs.update({
-    'setup'     : [],
+    'setup'     : ['ec2-50-16-20-142.compute-1.amazonaws.com'],
     'web'       : ['services.larvamap.asascience.com'],
     'datasets'  : [],
     'shorelines': [],
-    'runs'      : ['ec2-54-235-5-187.compute-1.amazonaws.com','ec2-23-22-151-145.compute-1.amazonaws.com'],
-    'workers'   : ['ec2-54-242-181-26.compute-1.amazonaws.com'],
+    'runs'      : [],
+    'workers'   : [],
     'all'       : []
 })
 # For copy and pasting when running tasks system wide
@@ -192,10 +192,10 @@ def setup_code():
 @roles('runs','datasets','shorelines','web','all')
 def update_netcdf_libraries():
     admin()
-    #run("cd ~")
-    #run("wget https://asa-dev.s3.amazonaws.com/installNCO.txt")
-    #run("chmod 744 installNCO.txt")
-    #sudo("./installNCO.txt")
+    run("cd ~")
+    run("wget https://asa-dev.s3.amazonaws.com/installNCO.txt")
+    run("chmod 744 installNCO.txt")
+    sudo("./installNCO.txt")
 
     larva()
     with cd(code_dir):

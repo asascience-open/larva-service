@@ -115,7 +115,7 @@ def run(run_id):
             time_step      = run['timestep']
             num_steps      = int(math.ceil((run['duration'] * 24 * 60 * 60) / time_step))
             start_time     = run['start'].replace(tzinfo = pytz.utc)
-            shoreline_path = run['shoreline_path']
+            shoreline_path = run['shoreline_path'] or app.config.get("SHORE_PATH")
             shoreline_feat = run['shoreline_feature']
 
             # Set up output directory/bucket for run

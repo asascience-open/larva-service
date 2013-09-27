@@ -23,12 +23,12 @@ code_dir = "/home/larva/larva-service"
 data_snapshot = "snap-94f3cfd7"
 
 env.roledefs.update({
-    'setup'     : ['ec2-50-16-20-142.compute-1.amazonaws.com'],
+    'setup'     : [],
     'web'       : ['services.larvamap.asascience.com'],
     'datasets'  : [],
     'shorelines': [],
     'runs'      : [],
-    'workers'   : [],
+    'workers'   : 'ec2-50-16-20-142.compute-1.amazonaws.com'],
     'all'       : []
 })
 # For copy and pasting when running tasks system wide
@@ -143,14 +143,20 @@ def setup():
     # Setup Nginx
     setup_nginx()
 
-    # Data/Bathy
+    # Data/Bathy (EBS from snapshot)
     setup_data()
+
+    # Scratch Area (empty EBS)
+    setup_scratch()
 
     # Setup Filesystem
     setup_filesystem()
 
     # Setup a Munin node
     setup_munin()
+
+    # Crontab to remove old cache
+    setup_crontab()
 
     # Setup supervisord
     update_supervisord()
@@ -294,6 +300,40 @@ def setup_data():
         run("ec2-delete-volume %s --aws-access-key %s --aws-secret-key %s" % (detach_vol_id, env.aws_access, env.aws_secret))
 
 @roles('setup')
+def setup_scratch():
+    admin()
+    with settings(warn_only=True):
+        sudo("umount /scratch")
+        sudo("umount /dev/sdg")
+        sudo("mkdir /scratch")
+
+    # Get instance's ID
+    instance_id = run("wget -q -O - http://169.254.169.254/latest/meta-data/instance-id")
+    # Get instance's availability zone
+    zone = run("wget -q -O - http://169.254.169.254/latest/meta-data/placement/availability-zone")
+
+    # Detach the current volume
+    detach_vol_id = run("ec2-describe-instances %s --aws-access-key %s --aws-secret-key %s | awk '/\/dev\/sdg/ {print $3}'" % (instance_id, env.aws_access, env.aws_secret))
+    if detach_vol_id.find("vol-") == 0:
+        run("ec2-detach-volume %s --aws-access-key %s --aws-secret-key %s" % (detach_vol_id, env.aws_access, env.aws_secret))
+
+    # Create new volume from snapshot
+    volume = run("ec2-create-volume --aws-access-key %s --aws-secret-key %s --size 200 -z %s" % (env.aws_access, env.aws_secret, zone))
+    #volume = "VOLUME    vol-164df04f    20  snap-94f3cfd7   us-east-1c  creating    2013-04-17T19:40:05+0000    standard"
+    vol_index = volume.find("vol-")
+    volume_id = volume[vol_index:vol_index+12]
+
+    # Wait for the old volume to be detached and new volume to be created
+    time.sleep(30)
+    sudo("ec2-attach-volume --aws-access-key %s --aws-secret-key %s -d /dev/sdg -i %s %s" % (env.aws_access, env.aws_secret, instance_id, volume_id))
+    time.sleep(30)
+
+    # Delete the old volume
+    if detach_vol_id.find("vol-") == 0:
+        run("ec2-delete-volume %s --aws-access-key %s --aws-secret-key %s" % (detach_vol_id, env.aws_access, env.aws_secret))    
+
+
+@roles('setup')
 def setup_filesystem():
     admin()
     with settings(warn_only=True):
@@ -301,16 +341,22 @@ def setup_filesystem():
         sudo("mount /dev/sdf /data")
         sudo("chown -R larva:larva /data")
 
-        # Use /dev/sdb because it is the only one a small instance will have
-        sudo("umount /media/ephemeral*")
-        sudo("umount /dev/sdb")
+        # Scratch is mounted at /dev/sdg
         sudo("umount /scratch")
-        sudo("mkfs.ext4 /dev/sdb")
+        sudo("umount /dev/sdg")
         sudo("mkdir /scratch")
-        sudo("mount /dev/sdb /scratch")
+        sudo("mkfs.ext4 /dev/sdg")
+        sudo("mount /dev/sdg /scratch")
         sudo("mkdir -p /scratch/output")
         sudo("mkdir -p /scratch/cache")
         sudo("chown -R larva:larva /scratch")
+
+def setup_crontab():
+    larva()
+    src_file = "deploy/larva_crontab.txt"
+    dst_file = "/home/larva/crontab.txt"
+    upload_template(src_file, dst_file, context=copy(env), use_jinja=True, use_sudo=False, backup=False, mirror_local_mode=True)
+    run("crontab %s" % dst_file)
 
 def setup_munin():
     admin()

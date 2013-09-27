@@ -28,7 +28,7 @@ env.roledefs.update({
     'datasets'  : [],
     'shorelines': [],
     'runs'      : [],
-    'workers'   : 'ec2-50-16-20-142.compute-1.amazonaws.com'],
+    'workers'   : ['ec2-50-16-20-142.compute-1.amazonaws.com'],
     'all'       : []
 })
 # For copy and pasting when running tasks system wide

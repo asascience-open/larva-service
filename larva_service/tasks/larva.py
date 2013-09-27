@@ -57,7 +57,7 @@ def run(run_id):
 
         # Set up Logger
         queue = multiprocessing.Queue(-1)
-        
+
         # Close any existing handlers
         (hand.close() for hand in logger.handlers)
         # Remove any existing handlers
@@ -101,6 +101,8 @@ def run(run_id):
         t.daemon = True
         t.start()
 
+        model = None
+
         try:
 
             logger.progress((0, "Configuring model"))
@@ -137,7 +139,7 @@ def run(run_id):
             # Run the model
             cache_file = os.path.join(current_app.config['CACHE_PATH'], "hydro_" + run_id + ".cache")
             bathy_file = current_app.config['BATHY_PATH']
-            
+
             model.run(run['hydro_path'], output_path=output_path, bathy=bathy_file, output_formats=output_formats, cache=cache_file, remove_cache=False)
 
             # Move cache file to output directory so it gets uploaded to S3
@@ -156,7 +158,7 @@ def run(run_id):
             # Skip creating movie output_path
             """
             from paegan.viz.trajectory import CFTrajectory
-            
+
             logger.info("Creating animation...")
             for filename in os.listdir(output_path):
                 if os.path.splitext(filename)[1][1:] == "nc":
@@ -172,7 +174,7 @@ def run(run_id):
             job.meta["outcome"] = "success"
             job.save()
             return "Successfully ran %s" % run_id
-            
+
         except Exception as exception:
             logger.warn("Run FAILED, cleaning up and uploading log.")
             logger.warn(exception.message)

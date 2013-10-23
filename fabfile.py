@@ -27,7 +27,7 @@ env.roledefs.update({
     'web'       : ['services.larvamap.asascience.com'],
     'datasets'  : [],
     'shorelines': [],
-    'runs'      : [],
+    'runs'      : ['ec2-54-227-97-183.compute-1.amazonaws.com'],
     'workers'   : ['ec2-50-16-20-142.compute-1.amazonaws.com'],
     'all'       : []
 })

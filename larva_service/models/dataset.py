@@ -44,9 +44,12 @@ class Dataset(Document):
         Compute bounds for this dataset
         """
         try:
+
             nc = CommonDataset.open(self.location)
 
-            query_var = nc.get_varname_from_stdname("eastward_sea_water_velocity")[0]
+            matches = nc.get_varname_from_stdname("eastward_sea_water_velocity")
+            matches = matches + nc.get_varname_from_stdname("eastward_current")
+            query_var = matches[0]
 
             # Set BBOX
             minx, miny, maxx, maxy = nc.getbbox(var=query_var)

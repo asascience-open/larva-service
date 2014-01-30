@@ -9,6 +9,8 @@ import os
 import shutil
 import multiprocessing, logging
 from datetime import datetime
+from urlparse import urljoin
+
 PROGRESS=15
 logging.PROGRESS = PROGRESS
 logging.addLevelName(PROGRESS, 'PROGRESS')
@@ -35,6 +37,7 @@ from bson.objectid import ObjectId
 from rq import get_current_job
 
 import time
+
 
 def run(run_id):
 
@@ -78,7 +81,7 @@ def run(run_id):
         e = threading.Event()
 
         def save_progress():
-            while e.wait(5) != True:
+            while e.wait(5) is not True:
                 try:
                     record = progress_deque.pop()
                     if record == StopIteration:
@@ -87,7 +90,7 @@ def run(run_id):
                     job.meta["updated"] = record[0]
                     if record is not None and record[1] >= 0:
                         job.meta["progress"] = record[1]
-                    if isinstance(record[2],unicode) or isinstance(record[2], str):
+                    if isinstance(record[2], unicode) or isinstance(record[2], str):
                         job.meta["message"] = record[2]
 
                     job.save()
@@ -121,7 +124,7 @@ def run(run_id):
             shoreline_feat = run['shoreline_feature']
 
             # Set up output directory/bucket for run
-            output_formats = ['Shapefile','NetCDF','Trackline']
+            output_formats = ['Shapefile', 'NetCDF', 'Trackline']
 
             # Setup Models
             models = []
@@ -137,23 +140,11 @@ def run(run_id):
                 time_chunk=run['time_chunk'], horiz_chunk=run['horiz_chunk'], time_method=run['time_method'], shoreline_path=shoreline_path, shoreline_feature=shoreline_feat, reverse_distance=1500)
 
             # Run the model
-            cache_file = os.path.join(current_app.config['CACHE_PATH'], "hydro_" + run_id + ".cache")
+            cache_file = run_id + ".nc.cache"
+            cache_path = os.path.join(output_path, cache_file)
             bathy_file = current_app.config['BATHY_PATH']
 
-            model.run(run['hydro_path'], output_path=output_path, bathy=bathy_file, output_formats=output_formats, cache=cache_file, remove_cache=False)
-
-            # Move cache file to output directory so it gets uploaded to S3
-            # How about not.  These can be huge.
-            #try:
-            #    shutil.move(cache_file, output_path)
-            #except (IOError, OSError):
-            #    # The cache file was probably never written because the model failed
-            #    logger.info("No cache file from model exists")
-            #    pass
-            try:
-                os.remove(cache_file)
-            except (IOError, OSError):
-                logger.info("No cache file from model exists")
+            model.run(run['hydro_path'], output_path=output_path, bathy=bathy_file, output_formats=output_formats, cache=cache_path, remove_cache=False)
 
             # Skip creating movie output_path
             """
@@ -184,35 +175,49 @@ def run(run_id):
 
         finally:
 
-            # Handle results and cleanup
-            result_files = []
-            base_s3_url = "http://%s.s3.amazonaws.com/output/%s" % (current_app.config['S3_BUCKET'], run_id)
-            # Upload results to S3 and remove the local copies
-            conn = S3Connection()
-            bucket = conn.get_bucket(current_app.config['S3_BUCKET'])
-            logger.progress((99, "Uploading files to S3"))
+            output_files = []
+            for filename in os.listdir(output_path):
+                outfile = os.path.join(output_path, filename)
+                output_files.append(outfile)
 
+            logger.progress((99, "Processing output files"))
             # Close the handler so we can upload the log file without a file lock
             (hand.close() for hand in logger.handlers)
             queue.put(StopIteration)
             # Break out of the progress loop
             e.set()
 
-            for filename in os.listdir(output_path):
-                outfile = os.path.join(output_path,filename)
+            result_files = []
+            base_access_url = current_app.config.get('NON_S3_OUTPUT_URL', None)
+            # Handle results and cleanup
+            if current_app.config['USE_S3'] is True:
+                base_access_url = urljoin("http://%s.s3.amazonaws.com/output/" % current_app.config['S3_BUCKET'], run_id)
+                # Upload results to S3 and remove the local copies
+                conn = S3Connection()
+                bucket = conn.get_bucket(current_app.config['S3_BUCKET'])
 
-                # Upload the outputfiles with the same as the run name
-                name, ext = os.path.splitext(filename)
-                new_filename = slugify(unicode(run['name'])) + ext
+                for outfile in output_files:
+                    # Don't upload the cache file
+                    if os.path.basename(outfile) == cache_file:
+                        continue
 
-                k = Key(bucket)
-                k.key = "output/%s/%s" % (run_id, new_filename)
-                k.set_contents_from_filename(outfile)
-                k.set_acl('public-read')
-                result_files.append("%s/%s" % (base_s3_url, new_filename))
-                os.remove(outfile)
+                    # Upload the outfile with the same as the run name
+                    _, ext = os.path.splitext(outfile)
+                    new_filename = slugify(unicode(run['name'])) + ext
 
-            shutil.rmtree(output_path, ignore_errors=True)
+                    k = Key(bucket)
+                    k.key = "output/%s/%s" % (run_id, new_filename)
+                    k.set_contents_from_filename(outfile)
+                    k.set_acl('public-read')
+                    result_files.append(base_access_url + "/" + new_filename)
+                    os.remove(outfile)
+
+                shutil.rmtree(output_path, ignore_errors=True)
+
+            else:
+                for outfile in output_files:
+                    result_files.append(urljoin(base_access_url, run_id) + "/" + os.path.basename(outfile))
+
             shutil.rmtree(temp_animation_path, ignore_errors=True)
 
             # Set output fields

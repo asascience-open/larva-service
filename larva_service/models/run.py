@@ -77,7 +77,7 @@ class Run(Document):
         try:
             self.set_trackline()
         except:
-            app.logger.warning("Could no compute (cache) model run results locally")
+            app.logger.warning("Could not process trackline results.  URL may be invalid?")
 
         if Job.exists(self.task_id, connection=redis_connection):
             job = Job.fetch(self.task_id, connection=redis_connection)

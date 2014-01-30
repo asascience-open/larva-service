@@ -1,9 +1,13 @@
+DEBUG = False
+LOG_FILE = False
+
+USE_S3 = False
+S3_BUCKET = "undefined"
+
+TESTING = False
+
 import os
 import urlparse
-
-DEBUG = False
-TESTING = False
-LOG_FILE = False
 
 WEB_PASSWORD = os.environ.get("WEB_PASSWORD")
 

@@ -1,10 +1,10 @@
 Flask-MongoKit
-Flask-WTF           #==0.8.2
+Flask-WTF
 gunicorn
 redis
 rq
 rq-dashboard
 boto
 geojson
-paegan-transport    #git+https://github.com/kwilcox/paegan-transport.git@master#egg=paegan-transport
-paegan-viz          #git+https://github.com/kwilcox/paegan-viz.git@master#egg=paegan-viz
+paegan-transport>=0.3-dev
+paegan-viz>=0.3

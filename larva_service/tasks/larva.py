@@ -1,23 +1,22 @@
 from larva_service import app, db, slugify
 from flask import current_app
-from time import sleep
-from shapely.wkt import dumps, loads
-import json
+from shapely.wkt import loads
 import tempfile
 import pytz
 import math
 import os
 import shutil
-import multiprocessing, logging
+import multiprocessing
+import logging
 from datetime import datetime
 from urlparse import urljoin
 
-PROGRESS=15
+PROGRESS = 15
 logging.PROGRESS = PROGRESS
 logging.addLevelName(PROGRESS, 'PROGRESS')
-def progress(self, message, *args, **kws):
+def progress(self, message, *args, **kwargs):
     if self.isEnabledFor(PROGRESS):
-        self._log(PROGRESS, message, args, **kws)
+        self._log(PROGRESS, message, args, **kwargs)
 logging.Logger.progress = progress
 
 import threading

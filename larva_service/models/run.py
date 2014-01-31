@@ -184,15 +184,14 @@ class Run(Document):
 
     def run_config(self):
 
-        skip_keys = ['_id','cached_behavior','created','task_id','output','trackline','task_result', 'ended']
+        skip_keys = ['_id', 'cached_behavior', 'created', 'task_id', 'output', 'trackline', 'task_result', 'ended']
         d = {}
-        for key,value in self.iteritems():
+        for key, value in self.iteritems():
             if key not in skip_keys:
                 if key == 'start':
                     d[key] = value.isoformat()
                 else:
                     d[key] = value
-
 
         return d
 
@@ -218,7 +217,7 @@ class Run(Document):
                         self[key] = datetime.fromtimestamp(value / 1000, pytz.utc)
                     except:
                         raise
-                
+
             elif key == 'release_depth' or key == 'horiz_dispersion' or key == 'vert_dispersion':
                 self[key] = float(value)
 

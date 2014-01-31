@@ -31,6 +31,10 @@ class RunMigration(DocumentMigration):
         self.target = {'shoreline_path':{'$exists':False}, 'shoreline_feature':{'$exists':False}}
         self.update = {'$set':{'shoreline_path':u'', 'shoreline_feature':u''}}
 
+    def allmigration04__add_caching_field(self):
+        self.target = {'caching' : {'$exists' : False }}
+        self.update = {'$set' : {'caching' : True }}
+
 class Run(Document):
     __collection__ = 'runs'
     use_dot_notation = True
@@ -58,13 +62,15 @@ class Run(Document):
        'trackline'          : unicode,
        'ended'              : datetime,
        'shoreline_path'     : unicode,
-       'shoreline_feature'  : unicode
+       'shoreline_feature'  : unicode,
+       'caching'            : bool
     }
     default_values = {
                       'created': datetime.utcnow,
                       'time_chunk'  : 10,
                       'horiz_chunk' : 5,
-                      'time_method' : u'interp'
+                      'time_method' : u'interp',
+                      'caching'     : True
                       }
     migration_handler = RunMigration
 

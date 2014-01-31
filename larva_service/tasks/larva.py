@@ -144,7 +144,7 @@ def run(run_id):
             cache_path = os.path.join(output_path, cache_file)
             bathy_file = current_app.config['BATHY_PATH']
 
-            model.run(run['hydro_path'], output_path=output_path, bathy=bathy_file, output_formats=output_formats, cache=cache_path, remove_cache=False)
+            model.run(run['hydro_path'], output_path=output_path, bathy=bathy_file, output_formats=output_formats, cache=cache_path, remove_cache=False, caching=run['caching'])
 
             # Skip creating movie output_path
             """

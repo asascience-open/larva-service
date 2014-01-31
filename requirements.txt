@@ -6,5 +6,5 @@ rq
 rq-dashboard
 boto
 geojson
-paegan-transport>=0.3-dev
+git+https://github.com/asascience-open/paegan-transport.git@99a7f4ea24f0f42d9b34d1fb0e87ab2c49315bd3#egg=paegan-transport
 paegan-viz>=0.3

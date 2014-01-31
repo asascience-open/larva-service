@@ -7,13 +7,22 @@ import time
 """
     Call this with fab -c .fab TASK to pick up deploy variables
     Required variables in .fab file:
-        webpass = x
-        secret_key = x
-        mongo_db = x
-        redis_db = x
-        aws_access = x
-        aws_secret = x
-        key_filename = x
+        webpass = your_web_password
+        secret_key = your_secret_key
+        mongo_db = mongodb://localhost:27017/larvaservice_production
+        redis_db = redis://localhost:6379/0
+        webuser = www-data ('nginx' for RedHat based distros)
+
+        use_s3 = False
+        s3_bucket = notneeded
+        aws_access = notneeded
+        aws_secret = notneeded
+
+        non_s3_output_url = "http://particles.pvd.axiomalaska.com/files/"
+
+        bathy_path  = "/data/bathy/world_etopo1/ETOPO1_Bed_g_gmt4.grd"
+        output_path = "/mnt/gluster/data/particle_output"
+        shore_path  = "/data/shore/westcoast/New_Land_Clean.shp"
 """
 
 env.user = "larva"
@@ -177,10 +186,10 @@ def setup_gdal():
 
 def setup_nginx():
     admin()
-    put(local_path='deploy/nginx.conf', remote_path='/etc/nginx/nginx.conf', use_sudo=True, mirror_local_mode=True)
-    upload_template('deploy/nginx_larva.conf', '/etc/nginx/conf.d/larva.conf', context=copy(env), use_jinja=True, use_sudo=True, backup=False, mirror_local_mode=True)
+    upload_template('deploy/nginx.conf', '/etc/nginx/nginx.conf', context=copy(env), use_sudo=True, backup=False, mirror_local_mode=True)
+    upload_template('deploy/nginx_larva.conf', '/etc/nginx/conf.d/larva.conf', context=copy(env), use_sudo=True, backup=False, mirror_local_mode=True)
     sudo("chkconfig nginx on")
-    restart_nginx()
+    sudo("/etc/init.d/nginx restart")
 
 def update_supervisord():
     larva()
@@ -232,9 +241,6 @@ def update_libs():
             run("pip uninstall -y paegan paegan-viz paegan-transport")
             run("pip install -r requirements.txt")
 
-def restart_nginx():
-    admin()
-    sudo("/etc/init.d/nginx restart")
 
 def supervisord_restart():
     stop_supervisord()

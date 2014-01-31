@@ -1,8 +1,11 @@
-import urlparse
-
 DEBUG = True
-TESTING = True
 LOG_FILE = True
+TESTING = True
+
+OUTPUT_PATH = "/data/lm/tests/output"
+cache_PATH = "/data/lm/tests/cache"
+
+import urlparse
 
 # Database
 MONGO_URI = "mongodb://larvamap:yourpassword@localhost:27017/larvaservice_testing"
@@ -21,10 +24,3 @@ REDIS_PORT = url.port
 REDIS_USERNAME = url.username
 REDIS_PASSWORD = url.password
 REDIS_DB = url.path[1:]
-
-S3_BUCKET = "larvamap-test"
-
-BATHY_PATH = "/data/lm/bathy/ETOPO1_Bed_g_gmt4.grd"
-CACHE_PATH = "/data/lm/cache"
-OUTPUT_PATH = "/data/lm/output"
-SHORE_PATH = "/home/dev/Development/paegan/paegan/resources/shoreline/global/10m_land.shp"

@@ -30,7 +30,7 @@ class Dataset(Document):
     default_values = {
                       'created': datetime.utcnow
                       }
-                      
+
     def status(self):
         if Job.exists(self.task_id, connection=redis_connection):
             job = Job.fetch(self.task_id, connection=redis_connection)
@@ -44,19 +44,21 @@ class Dataset(Document):
         Compute bounds for this dataset
         """
         try:
+
             nc = CommonDataset.open(self.location)
 
-            query_var = nc.get_varname_from_stdname("eastward_sea_water_velocity")[0]
+            matches = nc.get_varname_from_stdname("eastward_sea_water_velocity")
+            matches = matches + nc.get_varname_from_stdname("eastward_current")
+            query_var = matches[0]
 
             # Set BBOX
             minx, miny, maxx, maxy = nc.getbbox(var=query_var)
             self.bbox = unicode(box(minx, miny, maxx, maxy).wkt)
 
             # Set Bounding Polygon
-            # Bounding polygon is not implemented in Paegan yet
-            #poly = nc.getboundingpolygon(var=query_var)
-            #self.geometry = poly
-            
+            poly = nc.getboundingpolygon(var=query_var)
+            self.geometry = unicode(poly.wkt)
+
             # Set Time bounds
             mintime, maxtime = nc.gettimebounds(var=query_var)
             self.starting = mintime
@@ -70,12 +72,11 @@ class Dataset(Document):
                 else:
                     return value.tolist()
 
-            
             cleaned_info = {}
             variables = nc.getvariableinfo()
-            for k,v in variables.items():
+            for k, v in variables.items():
                 # Strip out numpy arrays into BSON encodable things.
-                cleaned_var = { key:clean(value) for key,value in v.items() }
+                cleaned_var = { key : clean(value) for key, value in v.items() }
                 cleaned_info[k] = cleaned_var
 
             self.variables = cleaned_info

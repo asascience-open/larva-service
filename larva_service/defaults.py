@@ -1,13 +1,22 @@
+DEBUG = False
+LOG_FILE = False
+TESTING = False
+
 import os
 import urlparse
-
-DEBUG = False
-TESTING = False
-LOG_FILE = False
 
 WEB_PASSWORD = os.environ.get("WEB_PASSWORD")
 
 SECRET_KEY = os.environ.get("SECRET_KEY")
+
+USE_S3 = os.environ.get('USE_S3', False)
+S3_BUCKET = os.environ.get('S3_BUCKET', "undefined")
+NON_S3_OUTPUT_URL = os.environ.get('NON_S3_OUTPUT_URL', "undefined")
+
+BATHY_PATH = os.environ.get('BATHY_PATH', "undefined")
+CACHE_PATH = os.environ.get('CACHE_PATH', "undefined")
+OUTPUT_PATH = os.environ.get('OUTPUT_PATH', "undefined")
+SHORE_PATH = os.environ.get('SHORE_PATH', "undefined")
 
 # Database
 MONGO_URI = os.environ.get('MONGO_URI')

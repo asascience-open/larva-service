@@ -1,20 +1,22 @@
 from larva_service import app, db, slugify
 from flask import current_app
-from time import sleep
-from shapely.wkt import dumps, loads
-import json
+from shapely.wkt import loads
+import tempfile
 import pytz
 import math
 import os
 import shutil
-import multiprocessing, logging
+import multiprocessing
+import logging
 from datetime import datetime
-PROGRESS=15
+from urlparse import urljoin
+
+PROGRESS = 15
 logging.PROGRESS = PROGRESS
 logging.addLevelName(PROGRESS, 'PROGRESS')
-def progress(self, message, *args, **kws):
+def progress(self, message, *args, **kwargs):
     if self.isEnabledFor(PROGRESS):
-        self._log(PROGRESS, message, args, **kws)
+        self._log(PROGRESS, message, args, **kwargs)
 logging.Logger.progress = progress
 
 import threading
@@ -36,6 +38,7 @@ from rq import get_current_job
 
 import time
 
+
 def run(run_id):
 
     # Sleep to give the Run object enough time to save
@@ -47,23 +50,29 @@ def run(run_id):
         job = get_current_job()
 
         output_path = os.path.join(current_app.config['OUTPUT_PATH'], run_id)
-        temp_animation_path = os.path.join(current_app.config['OUTPUT_PATH'], "temp_images_" + run_id)
-
         shutil.rmtree(output_path, ignore_errors=True)
         os.makedirs(output_path)
 
+        cache_path = os.path.join(current_app.config['CACHE_PATH'], run_id)
+        shutil.rmtree(cache_path, ignore_errors=True)
+        os.makedirs(cache_path)
+
+        temp_animation_path = os.path.join(current_app.config['OUTPUT_PATH'], "temp_images_" + run_id)
         shutil.rmtree(temp_animation_path, ignore_errors=True)
         os.makedirs(temp_animation_path)
 
         # Set up Logger
         queue = multiprocessing.Queue(-1)
 
+        f, log_file = tempfile.mkstemp(dir=cache_path, prefix=run_id, suffix=".log")
+        os.close(f)
+
         # Close any existing handlers
         (hand.close() for hand in logger.handlers)
         # Remove any existing handlers
         logger.handlers = []
         logger.setLevel(logging.PROGRESS)
-        handler = MultiProcessingLogHandler(os.path.join(output_path, '%s.log' % run_id), queue)
+        handler = MultiProcessingLogHandler(log_file, queue)
         handler.setLevel(logging.PROGRESS)
         formatter = logging.Formatter('[%(asctime)s] - %(levelname)s - %(name)s - %(processName)s - %(message)s')
         handler.setFormatter(formatter)
@@ -78,7 +87,7 @@ def run(run_id):
         e = threading.Event()
 
         def save_progress():
-            while e.wait(5) != True:
+            while e.wait(5) is not True:
                 try:
                     record = progress_deque.pop()
                     if record == StopIteration:
@@ -87,7 +96,7 @@ def run(run_id):
                     job.meta["updated"] = record[0]
                     if record is not None and record[1] >= 0:
                         job.meta["progress"] = record[1]
-                    if isinstance(record[2],unicode) or isinstance(record[2], str):
+                    if isinstance(record[2], unicode) or isinstance(record[2], str):
                         job.meta["message"] = record[2]
 
                     job.save()
@@ -121,7 +130,7 @@ def run(run_id):
             shoreline_feat = run['shoreline_feature']
 
             # Set up output directory/bucket for run
-            output_formats = ['Shapefile','NetCDF','Trackline']
+            output_formats = ['Shapefile', 'NetCDF', 'Trackline']
 
             # Setup Models
             models = []
@@ -131,29 +140,15 @@ def run(run_id):
                 models.append(l)
             models.append(Transport(horizDisp=run['horiz_dispersion'], vertDisp=run['vert_dispersion']))
 
-
             # Setup ModelController
             model = ModelController(geometry=geometry, depth=start_depth, start=start_time, step=time_step, nstep=num_steps, npart=num_particles, models=models, use_bathymetry=True, use_shoreline=True,
-                time_chunk=run['time_chunk'], horiz_chunk=run['horiz_chunk'], time_method=run['time_method'], shoreline_path=shoreline_path, shoreline_feature=shoreline_feat, reverse_distance=1500)
+                                    time_chunk=run['time_chunk'], horiz_chunk=run['horiz_chunk'], time_method=run['time_method'], shoreline_path=shoreline_path, shoreline_feature=shoreline_feat, reverse_distance=1500)
 
             # Run the model
-            cache_file = os.path.join(current_app.config['CACHE_PATH'], "hydro_" + run_id + ".cache")
+            cache_file = os.path.join(cache_path, run_id + ".nc.cache")
             bathy_file = current_app.config['BATHY_PATH']
 
-            model.run(run['hydro_path'], output_path=output_path, bathy=bathy_file, output_formats=output_formats, cache=cache_file, remove_cache=False)
-
-            # Move cache file to output directory so it gets uploaded to S3
-            # How about not.  These can be huge.
-            #try:
-            #    shutil.move(cache_file, output_path)
-            #except (IOError, OSError):
-            #    # The cache file was probably never written because the model failed
-            #    logger.info("No cache file from model exists")
-            #    pass
-            try:
-                os.remove(cache_file)
-            except (IOError, OSError):
-                logger.info("No cache file from model exists")
+            model.run(run['hydro_path'], output_path=output_path, bathy=bathy_file, output_formats=output_formats, cache=cache_file, remove_cache=False, caching=run['caching'])
 
             # Skip creating movie output_path
             """
@@ -184,35 +179,57 @@ def run(run_id):
 
         finally:
 
-            # Handle results and cleanup
-            result_files = []
-            base_s3_url = "http://%s.s3.amazonaws.com/output/%s" % (current_app.config['S3_BUCKET'], run_id)
-            # Upload results to S3 and remove the local copies
-            conn = S3Connection()
-            bucket = conn.get_bucket(current_app.config['S3_BUCKET'])
-            logger.progress((99, "Uploading files to S3"))
-
+            logger.progress((99, "Processing output files"))
             # Close the handler so we can upload the log file without a file lock
             (hand.close() for hand in logger.handlers)
             queue.put(StopIteration)
             # Break out of the progress loop
             e.set()
+            t.join()
 
+            # Move logfile to output directory
+            shutil.move(log_file, os.path.join(output_path, 'model.log'))
+
+            # Move cachefile to output directory if we made one
+            if run['caching']:
+                shutil.move(cache_file, output_path)
+
+            output_files = []
             for filename in os.listdir(output_path):
-                outfile = os.path.join(output_path,filename)
+                outfile = os.path.join(output_path, filename)
+                output_files.append(outfile)
 
-                # Upload the outputfiles with the same as the run name
-                name, ext = os.path.splitext(filename)
-                new_filename = slugify(unicode(run['name'])) + ext
+            result_files = []
+            base_access_url = current_app.config.get('NON_S3_OUTPUT_URL', None)
+            # Handle results and cleanup
+            if current_app.config['USE_S3'] is True:
+                base_access_url = urljoin("http://%s.s3.amazonaws.com/output/" % current_app.config['S3_BUCKET'], run_id)
+                # Upload results to S3 and remove the local copies
+                conn = S3Connection()
+                bucket = conn.get_bucket(current_app.config['S3_BUCKET'])
 
-                k = Key(bucket)
-                k.key = "output/%s/%s" % (run_id, new_filename)
-                k.set_contents_from_filename(outfile)
-                k.set_acl('public-read')
-                result_files.append("%s/%s" % (base_s3_url, new_filename))
-                os.remove(outfile)
+                for outfile in output_files:
+                    # Don't upload the cache file
+                    if os.path.basename(outfile) == os.path.basename(cache_file):
+                        continue
 
-            shutil.rmtree(output_path, ignore_errors=True)
+                    # Upload the outfile with the same as the run name
+                    _, ext = os.path.splitext(outfile)
+                    new_filename = slugify(unicode(run['name'])) + ext
+
+                    k = Key(bucket)
+                    k.key = "output/%s/%s" % (run_id, new_filename)
+                    k.set_contents_from_filename(outfile)
+                    k.set_acl('public-read')
+                    result_files.append(base_access_url + "/" + new_filename)
+                    os.remove(outfile)
+
+                shutil.rmtree(output_path, ignore_errors=True)
+
+            else:
+                for outfile in output_files:
+                    result_files.append(urljoin(base_access_url, run_id) + "/" + os.path.basename(outfile))
+
             shutil.rmtree(temp_animation_path, ignore_errors=True)
 
             # Set output fields

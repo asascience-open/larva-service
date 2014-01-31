@@ -31,6 +31,10 @@ class RunMigration(DocumentMigration):
         self.target = {'shoreline_path':{'$exists':False}, 'shoreline_feature':{'$exists':False}}
         self.update = {'$set':{'shoreline_path':u'', 'shoreline_feature':u''}}
 
+    def allmigration04__add_caching_field(self):
+        self.target = {'caching' : {'$exists' : False }}
+        self.update = {'$set' : {'caching' : True }}
+
 class Run(Document):
     __collection__ = 'runs'
     use_dot_notation = True
@@ -58,13 +62,15 @@ class Run(Document):
        'trackline'          : unicode,
        'ended'              : datetime,
        'shoreline_path'     : unicode,
-       'shoreline_feature'  : unicode
+       'shoreline_feature'  : unicode,
+       'caching'            : bool
     }
     default_values = {
                       'created': datetime.utcnow,
                       'time_chunk'  : 10,
                       'horiz_chunk' : 5,
-                      'time_method' : u'interp'
+                      'time_method' : u'interp',
+                      'caching'     : True
                       }
     migration_handler = RunMigration
 
@@ -77,7 +83,7 @@ class Run(Document):
         try:
             self.set_trackline()
         except:
-            app.logger.warning("Could no compute (cache) model run results locally")
+            app.logger.warning("Could not process trackline results.  URL may be invalid?")
 
         if Job.exists(self.task_id, connection=redis_connection):
             job = Job.fetch(self.task_id, connection=redis_connection)
@@ -178,15 +184,14 @@ class Run(Document):
 
     def run_config(self):
 
-        skip_keys = ['_id','cached_behavior','created','task_id','output','trackline','task_result', 'ended']
+        skip_keys = ['_id', 'cached_behavior', 'created', 'task_id', 'output', 'trackline', 'task_result', 'ended']
         d = {}
-        for key,value in self.iteritems():
+        for key, value in self.iteritems():
             if key not in skip_keys:
                 if key == 'start':
                     d[key] = value.isoformat()
                 else:
                     d[key] = value
-
 
         return d
 
@@ -212,7 +217,7 @@ class Run(Document):
                         self[key] = datetime.fromtimestamp(value / 1000, pytz.utc)
                     except:
                         raise
-                
+
             elif key == 'release_depth' or key == 'horiz_dispersion' or key == 'vert_dispersion':
                 self[key] = float(value)
 

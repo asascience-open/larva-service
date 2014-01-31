@@ -3,6 +3,7 @@ LOG_FILE = True
 TESTING = True
 
 OUTPUT_PATH = "/data/lm/tests/output"
+cache_PATH = "/data/lm/tests/cache"
 
 import urlparse
 

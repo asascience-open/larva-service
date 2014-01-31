@@ -50,23 +50,29 @@ def run(run_id):
         job = get_current_job()
 
         output_path = os.path.join(current_app.config['OUTPUT_PATH'], run_id)
-        temp_animation_path = os.path.join(current_app.config['OUTPUT_PATH'], "temp_images_" + run_id)
-
         shutil.rmtree(output_path, ignore_errors=True)
         os.makedirs(output_path)
 
+        cache_path = os.path.join(current_app.config['CACHE_PATH'], run_id)
+        shutil.rmtree(cache_path, ignore_errors=True)
+        os.makedirs(cache_path)
+
+        temp_animation_path = os.path.join(current_app.config['OUTPUT_PATH'], "temp_images_" + run_id)
         shutil.rmtree(temp_animation_path, ignore_errors=True)
         os.makedirs(temp_animation_path)
 
         # Set up Logger
         queue = multiprocessing.Queue(-1)
 
+        f, log_file = tempfile.mkstemp(dir=cache_path, prefix=run_id, suffix=".log")
+        os.close(f)
+
         # Close any existing handlers
         (hand.close() for hand in logger.handlers)
         # Remove any existing handlers
         logger.handlers = []
         logger.setLevel(logging.PROGRESS)
-        handler = MultiProcessingLogHandler(os.path.join(output_path, '%s.log' % run_id), queue)
+        handler = MultiProcessingLogHandler(log_file, queue)
         handler.setLevel(logging.PROGRESS)
         formatter = logging.Formatter('[%(asctime)s] - %(levelname)s - %(name)s - %(processName)s - %(message)s')
         handler.setFormatter(formatter)
@@ -134,17 +140,15 @@ def run(run_id):
                 models.append(l)
             models.append(Transport(horizDisp=run['horiz_dispersion'], vertDisp=run['vert_dispersion']))
 
-
             # Setup ModelController
             model = ModelController(geometry=geometry, depth=start_depth, start=start_time, step=time_step, nstep=num_steps, npart=num_particles, models=models, use_bathymetry=True, use_shoreline=True,
-                time_chunk=run['time_chunk'], horiz_chunk=run['horiz_chunk'], time_method=run['time_method'], shoreline_path=shoreline_path, shoreline_feature=shoreline_feat, reverse_distance=1500)
+                                    time_chunk=run['time_chunk'], horiz_chunk=run['horiz_chunk'], time_method=run['time_method'], shoreline_path=shoreline_path, shoreline_feature=shoreline_feat, reverse_distance=1500)
 
             # Run the model
-            cache_file = run_id + ".nc.cache"
-            cache_path = os.path.join(output_path, cache_file)
+            cache_file = os.path.join(cache_path, run_id + ".nc.cache")
             bathy_file = current_app.config['BATHY_PATH']
 
-            model.run(run['hydro_path'], output_path=output_path, bathy=bathy_file, output_formats=output_formats, cache=cache_path, remove_cache=False, caching=run['caching'])
+            model.run(run['hydro_path'], output_path=output_path, bathy=bathy_file, output_formats=output_formats, cache=cache_file, remove_cache=False, caching=run['caching'])
 
             # Skip creating movie output_path
             """
@@ -175,11 +179,6 @@ def run(run_id):
 
         finally:
 
-            output_files = []
-            for filename in os.listdir(output_path):
-                outfile = os.path.join(output_path, filename)
-                output_files.append(outfile)
-
             logger.progress((99, "Processing output files"))
             # Close the handler so we can upload the log file without a file lock
             (hand.close() for hand in logger.handlers)
@@ -187,6 +186,17 @@ def run(run_id):
             # Break out of the progress loop
             e.set()
             t.join()
+
+            # Move logfile to output directory
+            shutil.move(log_file, os.path.join(output_path, 'model.log'))
+
+            # Move cachefile to output directory
+            shutil.move(cache_file, output_path)
+
+            output_files = []
+            for filename in os.listdir(output_path):
+                outfile = os.path.join(output_path, filename)
+                output_files.append(outfile)
 
             result_files = []
             base_access_url = current_app.config.get('NON_S3_OUTPUT_URL', None)
@@ -199,7 +209,7 @@ def run(run_id):
 
                 for outfile in output_files:
                     # Don't upload the cache file
-                    if os.path.basename(outfile) == cache_file:
+                    if os.path.basename(outfile) == os.path.basename(cache_file):
                         continue
 
                     # Upload the outfile with the same as the run name

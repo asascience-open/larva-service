@@ -15,6 +15,12 @@ app.config.from_envvar('APPLICATION_SETTINGS', silent=True)
 from rq_dashboard import RQDashboard
 RQDashboard(app)
 
+# Setup CACHE_PATH
+if app.config.get('CACHE_PATH', None) is None:
+    app.config['CACHE_PATH'] = os.path.join(os.path.dirname(__file__), "..", "cache")
+if not os.path.exists(app.config['CACHE_PATH']):
+    os.makedirs(app.config['CACHE_PATH'])
+
 # Setup OUTPUT_PATH
 if app.config.get('OUTPUT_PATH', None) is None:
     app.config['OUTPUT_PATH'] = os.path.join(os.path.dirname(__file__), "..", "output")

@@ -14,6 +14,7 @@ S3_BUCKET = os.environ.get('S3_BUCKET', "undefined")
 NON_S3_OUTPUT_URL = os.environ.get('NON_S3_OUTPUT_URL', "undefined")
 
 BATHY_PATH = os.environ.get('BATHY_PATH', "undefined")
+CACHE_PATH = os.environ.get('CACHE_PATH', "undefined")
 OUTPUT_PATH = os.environ.get('OUTPUT_PATH', "undefined")
 SHORE_PATH = os.environ.get('SHORE_PATH', "undefined")
 

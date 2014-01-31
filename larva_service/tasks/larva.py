@@ -3,6 +3,7 @@ from flask import current_app
 from time import sleep
 from shapely.wkt import dumps, loads
 import json
+import tempfile
 import pytz
 import math
 import os

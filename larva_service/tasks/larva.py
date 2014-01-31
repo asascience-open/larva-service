@@ -190,8 +190,9 @@ def run(run_id):
             # Move logfile to output directory
             shutil.move(log_file, os.path.join(output_path, 'model.log'))
 
-            # Move cachefile to output directory
-            shutil.move(cache_file, output_path)
+            # Move cachefile to output directory if we made one
+            if run['caching']:
+                shutil.move(cache_file, output_path)
 
             output_files = []
             for filename in os.listdir(output_path):

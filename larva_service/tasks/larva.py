@@ -186,6 +186,7 @@ def run(run_id):
             queue.put(StopIteration)
             # Break out of the progress loop
             e.set()
+            t.join()
 
             result_files = []
             base_access_url = current_app.config.get('NON_S3_OUTPUT_URL', None)
